@@ -148,9 +148,9 @@ go build -o abdal-4iproto-panel.exe main.go
 
 ```json
 {
-  "port": 8080,
-  "username": "admin",
-  "password": "admin123",
+  "port": 52202,
+  "username": "ebrasha",
+  "password": "ebrasha1309",
   "logging": true,
   "blocked_ips": [],
   "max_login_attempts": 5,

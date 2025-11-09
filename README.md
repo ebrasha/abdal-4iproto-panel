@@ -149,9 +149,9 @@ The panel creates a default configuration file `abdal-4iproto-panel.json` on fir
 
 ```json
 {
-  "port": 8080,
-  "username": "admin",
-  "password": "admin123",
+  "port": 52202,
+  "username": "ebrasha",
+  "password": "ebrasha1309",
   "logging": true,
   "blocked_ips": [],
   "max_login_attempts": 5,
