@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="{{.Lang}}" dir="{{if eq .Lang "fa"}}rtl{{else}}ltr{{end}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <title>{{T "users"}} - Abdal 4iProto Panel</title>
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    {{if eq .Lang "fa"}}<link href="/css/bootstrap.rtl.min.css" rel="stylesheet">{{end}}
+    <link href="/css/sweetalert2.min.css" rel="stylesheet">
+    <link href="/theme.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .logo {
+            max-height: 50px;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .navbar-toggler {
+            position: fixed;
+            top: 10px;
+            {{if eq .Lang "fa"}}right{{else}}left{{end}}: 10px;
+            z-index: 1001;
+            background-color: #007bff;
+            border: none;
+            padding: 8px 12px;
+        }
+        .navbar-toggler:focus {
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.5);
+        }
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 1000;
+                transform: translateX(-100%);
+                box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+            .overlay.show {
+                display: block;
+            }
+        }
+        .badge-exceeded {
+            background-color: #dc3545;
+        }
+    </style>
+</head>
+<body class="theme-{{.Theme}}">
+    <button class="navbar-toggler d-md-none" type="button" onclick="toggleSidebar()" aria-label="Toggle navigation">
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+    </button>
+    <div class="overlay" onclick="toggleSidebar()"></div>
+    <div class="container-fluid">
+        <div class="row">
+            {{template "sidebar.html" .}}
+            <div class="col-md-10 main-content">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h1>{{T "users"}}</h1>
+                    <button class="btn btn-primary" onclick="showAddUserModal()">{{T "add_user"}}</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>{{T "username"}}</th>
+                                <th>{{T "role"}}</th>
+                                <th>{{T "max_sessions"}}</th>
+                                <th>{{T "max_speed_kbps"}}</th>
+                                <th>{{T "max_total_mb"}}</th>
+                                <th>{{T "traffic_used"}}</th>
+                                <th>{{T "status"}}</th>
+                                <th>{{T "actions"}}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTable">
+                            <tr><td colspan="8" class="text-center">{{T "loading"}}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add/Edit User Modal -->
+    <div class="modal fade" id="userModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle">{{T "add_user"}}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm">
+                        <input type="hidden" id="editUsername">
+                        <div class="mb-3">
+                            <label class="form-label">{{T "username"}}</label>
+                            <input type="text" class="form-control" id="username" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{T "password"}}</label>
+                            <input type="password" class="form-control" id="password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{T "role"}}</label>
+                            <select class="form-select" id="role" required>
+                                <option value="user">{{T "user"}}</option>
+                                <option value="admin">{{T "admin"}}</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{T "blocked_domains"}} ({{T "comma_separated"}})</label>
+                            <textarea class="form-control" id="blockedDomains" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{T "blocked_ips"}} ({{T "comma_separated"}})</label>
+                            <textarea class="form-control" id="blockedIPs" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">{{T "log"}}</label>
+                            <select class="form-select" id="log">
+                                <option value="no">{{T "no"}}</option>
+                                <option value="yes">{{T "yes"}}</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{T "max_sessions"}}</label>
+                                <input type="number" class="form-control" id="maxSessions" value="1" min="1">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{T "session_ttl_seconds"}}</label>
+                                <input type="number" class="form-control" id="sessionTTL" value="300" min="1">
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{T "max_speed_kbps"}}</label>
+                                <input type="number" class="form-control" id="maxSpeed" value="1024" min="1">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">{{T "max_total_mb"}}</label>
+                                <input type="number" class="form-control" id="maxTotalMB" value="0" min="0">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{T "cancel"}}</button>
+                    <button type="button" class="btn btn-primary" onclick="saveUser()">{{T "save"}}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/sweetalert2.all.min.js"></script>
+    <script>
+        let users = [];
+        let userModal;
+
+        function setLanguage(lang) {
+            document.cookie = `lang=${lang}; path=/`;
+            window.location.reload();
+        }
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.overlay');
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            userModal = new bootstrap.Modal(document.getElementById('userModal'));
+            loadUsers();
+        });
+
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/users');
+                users = await response.json();
+                renderUsers();
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        function renderUsers() {
+            const tbody = document.getElementById('usersTable');
+            if (users.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">No users found</td></tr>';
+                return;
+            }
+            tbody.innerHTML = users.map(user => {
+                const trafficUsed = user.traffic_used_mb || 0;
+                const trafficLimit = user.traffic_limit_mb || 0;
+                const exceeded = user.traffic_exceeded || false;
+                const statusBadge = exceeded 
+                    ? '<span class="badge bg-danger">Exceeded</span>' 
+                    : '<span class="badge bg-success">Active</span>';
+                return `
+                    <tr>
+                        <td>${user.username}</td>
+                        <td><span class="badge bg-${user.role === 'admin' ? 'primary' : 'secondary'}">${user.role}</span></td>
+                        <td>${user.max_sessions}</td>
+                        <td>${user.max_speed_kbps} KB/s</td>
+                        <td>${user.max_total_mb || 0} MB</td>
+                        <td>${trafficUsed.toFixed(2)} MB</td>
+                        <td>${statusBadge}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="editUser('${user.username}')">Edit</button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteUser('${user.username}')">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function showAddUserModal() {
+            document.getElementById('userForm').reset();
+            document.getElementById('editUsername').value = '';
+            document.getElementById('username').disabled = false;
+            document.getElementById('modalTitle').textContent = 'Add User';
+            userModal.show();
+        }
+
+        function editUser(username) {
+            const user = users.find(u => u.username === username);
+            if (!user) return;
+            
+            document.getElementById('editUsername').value = user.username;
+            document.getElementById('username').value = user.username;
+            document.getElementById('username').disabled = true;
+            document.getElementById('password').value = user.password;
+            document.getElementById('role').value = user.role;
+            document.getElementById('blockedDomains').value = user.blocked_domains ? user.blocked_domains.join(', ') : '';
+            document.getElementById('blockedIPs').value = user.blocked_ips ? user.blocked_ips.join(', ') : '';
+            document.getElementById('log').value = user.log || 'no';
+            document.getElementById('maxSessions').value = user.max_sessions || 1;
+            document.getElementById('sessionTTL').value = user.session_ttl_seconds || 300;
+            document.getElementById('maxSpeed').value = user.max_speed_kbps || 1024;
+            document.getElementById('maxTotalMB').value = user.max_total_mb || 0;
+            document.getElementById('modalTitle').textContent = 'Edit User';
+            userModal.show();
+        }
+
+        async function saveUser() {
+            const form = document.getElementById('userForm');
+            if (!form.checkValidity()) {
+                form.reportValidity();
+                return;
+            }
+
+            const editUsername = document.getElementById('editUsername').value;
+            const user = {
+                username: document.getElementById('username').value,
+                password: document.getElementById('password').value,
+                role: document.getElementById('role').value,
+                blocked_domains: document.getElementById('blockedDomains').value.split(',').map(s => s.trim()).filter(s => s),
+                blocked_ips: document.getElementById('blockedIPs').value.split(',').map(s => s.trim()).filter(s => s),
+                log: document.getElementById('log').value,
+                max_sessions: parseInt(document.getElementById('maxSessions').value),
+                session_ttl_seconds: parseInt(document.getElementById('sessionTTL').value),
+                max_speed_kbps: parseInt(document.getElementById('maxSpeed').value),
+                max_total_mb: parseInt(document.getElementById('maxTotalMB').value)
+            };
+
+            try {
+                let url, method;
+                if (editUsername) {
+                    // For edit, use PUT to /api/users/username
+                    url = `/api/users/${editUsername}`;
+                    method = 'PUT';
+                    // Ensure username matches
+                    user.username = editUsername;
+                } else {
+                    // For new user, use POST to /api/users
+                    url = '/api/users';
+                    method = 'POST';
+                }
+                
+                const response = await fetch(url, {
+                    method: method,
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(user)
+                });
+
+                if (response.ok) {
+                    userModal.hide();
+                    loadUsers();
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '{{T "success"}}',
+                        text: '{{T "user_saved_success"}}',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    const error = await response.text();
+                    await Swal.fire({
+                        icon: 'error',
+                        title: '{{T "error"}}',
+                        text: error
+                    });
+                }
+            } catch (error) {
+                console.error('Error saving user:', error);
+                await Swal.fire({
+                    icon: 'error',
+                    title: '{{T "error"}}',
+                    text: '{{T "error_saving_user"}}'
+                });
+            }
+        }
+
+        async function deleteUser(username) {
+            const result = await Swal.fire({
+                icon: 'warning',
+                title: '{{T "confirm_delete"}}',
+                text: '{{T "confirm_delete"}}',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: '{{T "yes_delete"}}',
+                cancelButtonText: '{{T "cancel"}}'
+            });
+
+            if (!result.isConfirmed) return;
+
+            try {
+                const response = await fetch(`/api/users/${username}`, {
+                    method: 'DELETE'
+                });
+
+                if (response.ok) {
+                    loadUsers();
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '{{T "success"}}',
+                        text: '{{T "user_deleted_success"}}',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    await Swal.fire({
+                        icon: 'error',
+                        title: '{{T "error"}}',
+                        text: '{{T "error_deleting_user"}}'
+                    });
+                }
+            } catch (error) {
+                console.error('Error deleting user:', error);
+                await Swal.fire({
+                    icon: 'error',
+                    title: '{{T "error"}}',
+                    text: '{{T "error_deleting_user"}}'
+                });
+            }
+        }
+    </script>
+    <footer class="text-center text-muted  py-3" style="border-top: 1px solid #dee2e6;">
+        <small>Abdal 4iProto Panel v{{.PanelVersion}} | {{.PanelAuthor}}</small>
+    </footer>
+</body>
+</html>
+

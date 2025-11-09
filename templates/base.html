@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="{{.Lang}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{T "dashboard"}} - Abdal 4iProto Panel</title>
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .logo {
+            max-height: 50px;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .badge-exceeded {
+            background-color: #dc3545;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-2 sidebar">
+                <div class="text-center py-3">
+                    <img src="/img/logo.png" alt="Logo" class="logo mb-3">
+                    <h5>Abdal 4iProto Panel</h5>
+                </div>
+                <nav class="nav flex-column">
+                    <a class="nav-link" href="/">{{T "dashboard"}}</a>
+                    <a class="nav-link" href="/users">{{T "users"}}</a>
+                    <a class="nav-link" href="/server-config">{{T "server_config"}}</a>
+                    <a class="nav-link" href="/blocked-ips">{{T "blocked_ips"}}</a>
+                    <a class="nav-link" href="/logs">{{T "logs"}}</a>
+                    <a class="nav-link" href="/blocked-access">{{T "blocked_access"}}</a>
+                    <a class="nav-link" href="/traffic">{{T "traffic"}}</a>
+                </nav>
+            </div>
+            <div class="col-md-10 main-content">
+                {{content}}
+            </div>
+        </div>
+    </div>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function setLanguage(lang) {
+            document.cookie = `lang=${lang}; path=/`;
+            window.location.reload();
+        }
+    </script>
+</body>
+</html>
+

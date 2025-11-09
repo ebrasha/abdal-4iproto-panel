@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="{{.Lang}}" dir="{{if eq .Lang "fa"}}rtl{{else}}ltr{{end}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <title>{{T "traffic"}} - Abdal 4iProto Panel</title>
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    {{if eq .Lang "fa"}}<link href="/css/bootstrap.rtl.min.css" rel="stylesheet">{{end}}
+    <link href="/theme.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .logo {
+            max-height: 50px;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .navbar-toggler {
+            position: fixed;
+            top: 10px;
+            {{if eq .Lang "fa"}}right{{else}}left{{end}}: 10px;
+            z-index: 1001;
+            background-color: #007bff;
+            border: none;
+            padding: 8px 12px;
+        }
+        .navbar-toggler:focus {
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.5);
+        }
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 1000;
+                transform: translateX(-100%);
+                box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+            .overlay.show {
+                display: block;
+            }
+        }
+        .badge-exceeded {
+            background-color: #dc3545;
+        }
+        .progress {
+            height: 25px;
+        }
+    </style>
+</head>
+<body class="theme-{{.Theme}}">
+    <button class="navbar-toggler d-md-none" type="button" onclick="toggleSidebar()" aria-label="Toggle navigation">
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+    </button>
+    <div class="overlay" onclick="toggleSidebar()"></div>
+    <div class="container-fluid">
+        <div class="row">
+            {{template "sidebar.html" .}}
+            <div class="col-md-10 main-content">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h1>{{T "traffic"}}</h1>
+                    <button class="btn btn-primary" onclick="loadTraffic()">{{T "refresh"}}</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>{{T "username"}}</th>
+                                <th>IP Address</th>
+                                <th>{{T "total_bytes"}}</th>
+                                <th>{{T "bytes_sent"}}</th>
+                                <th>{{T "bytes_received"}}</th>
+                                <th>{{T "traffic_used"}}</th>
+                                <th>{{T "traffic_limit"}}</th>
+                                <th>{{T "status"}}</th>
+                                <th>{{T "last_timestamp"}}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="trafficTable">
+                            <tr><td colspan="9" class="text-center">{{T "loading"}}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let autoRefresh = false;
+        let refreshInterval;
+
+        function setLanguage(lang) {
+            document.cookie = `lang=${lang}; path=/`;
+            window.location.reload();
+        }
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.overlay');
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadTraffic();
+            startAutoRefresh();
+        });
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+        }
+
+        function formatMB(mb) {
+            return mb.toFixed(2) + ' MB';
+        }
+
+        async function loadTraffic() {
+            try {
+                const response = await fetch('/api/traffic/');
+                const traffic = await response.json();
+                renderTraffic(traffic);
+            } catch (error) {
+                console.error('Error loading traffic:', error);
+                document.getElementById('trafficTable').innerHTML = '<tr><td colspan="9" class="text-center text-danger">Error loading traffic data</td></tr>';
+            }
+        }
+
+        function renderTraffic(traffic) {
+            const tbody = document.getElementById('trafficTable');
+            if (!traffic || traffic.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center">No traffic data available</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = traffic.map(t => {
+                const totalMB = t.total_mb || 0;
+                const maxMB = t.max_total_mb || 0;
+                const exceeded = t.exceeded || false;
+                const usagePercent = maxMB > 0 ? (totalMB / maxMB * 100) : 0;
+                const statusBadge = exceeded 
+                    ? '<span class="badge bg-danger">{{T "exceeded"}}</span>' 
+                    : maxMB > 0 && usagePercent > 80
+                    ? '<span class="badge bg-warning">Warning</span>'
+                    : '<span class="badge bg-success">{{T "active"}}</span>';
+                
+                const progressBar = maxMB > 0 ? `
+                    <div class="progress">
+                        <div class="progress-bar ${exceeded ? 'bg-danger' : usagePercent > 80 ? 'bg-warning' : 'bg-success'}" 
+                             role="progressbar" 
+                             style="width: ${Math.min(usagePercent, 100)}%">
+                            ${usagePercent.toFixed(1)}%
+                        </div>
+                    </div>
+                ` : '<span class="text-muted">Unlimited</span>';
+
+                return `
+                    <tr>
+                        <td>${t.username}</td>
+                        <td>${t.ip || '-'}</td>
+                        <td>${formatBytes(t.total_bytes || 0)}</td>
+                        <td>${formatBytes(t.total_bytes_sent || 0)}</td>
+                        <td>${formatBytes(t.total_bytes_received || 0)}</td>
+                        <td>${formatMB(totalMB)}</td>
+                        <td>${maxMB > 0 ? formatMB(maxMB) : 'Unlimited'}</td>
+                        <td>${statusBadge} ${progressBar}</td>
+                        <td>${t.last_timestamp ? new Date(t.last_timestamp).toLocaleString() : '-'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function startAutoRefresh() {
+            if (autoRefresh) return;
+            autoRefresh = true;
+            refreshInterval = setInterval(loadTraffic, 5000);
+        }
+
+        function stopAutoRefresh() {
+            autoRefresh = false;
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+            }
+        }
+
+        window.addEventListener('beforeunload', function() {
+            stopAutoRefresh();
+        });
+    </script>
+    <footer class="text-center text-muted  py-3" style="border-top: 1px solid #dee2e6;">
+        <small>Abdal 4iProto Panel v{{.PanelVersion}} | {{.PanelAuthor}}</small>
+    </footer>
+</body>
+</html>
+

@@ -1,0 +1,11 @@
+{
+  "port": 52202,
+  "username": "ebrasha",
+  "password": "ebrasha1309",
+  "logging": true,
+  "blocked_ips": [],
+  "max_login_attempts": 5,
+  "login_attempt_window": 300,
+  "block_duration": 36000,
+  "theme": "ebrasha-dark"
+}

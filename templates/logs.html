@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="{{.Lang}}" dir="{{if eq .Lang "fa"}}rtl{{else}}ltr{{end}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <title>{{T "logs"}} - Abdal 4iProto Panel</title>
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    {{if eq .Lang "fa"}}<link href="/css/bootstrap.rtl.min.css" rel="stylesheet">{{end}}
+    <link href="/theme.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .logo {
+            max-height: 50px;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .navbar-toggler {
+            position: fixed;
+            top: 10px;
+            {{if eq .Lang "fa"}}right{{else}}left{{end}}: 10px;
+            z-index: 1001;
+            background-color: #007bff;
+            border: none;
+            padding: 8px 12px;
+        }
+        .navbar-toggler:focus {
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.5);
+        }
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 1000;
+                transform: translateX(-100%);
+                box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+            .overlay.show {
+                display: block;
+            }
+        }
+        .log-entry {
+            font-family: monospace;
+            font-size: 0.9em;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+        }
+        .log-container {
+            max-height: 600px;
+            overflow-y: auto;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .spinner-container {
+            text-align: center;
+            padding: 20px;
+        }
+        .spinner-border {
+            width: 3rem;
+            height: 3rem;
+        }
+    </style>
+</head>
+<body class="theme-{{.Theme}}">
+    <button class="navbar-toggler d-md-none" type="button" onclick="toggleSidebar()" aria-label="Toggle navigation">
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+    </button>
+    <div class="overlay" onclick="toggleSidebar()"></div>
+    <div class="container-fluid">
+        <div class="row">
+            {{template "sidebar.html" .}}
+            <div class="col-md-10 main-content">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h1>{{T "logs"}}</h1>
+                    <div>
+                        <select class="form-select d-inline-block" id="userSelect" style="width: auto;" onchange="onUserSelect()">
+                            <option value="">{{T "select_user"}}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="log-container" id="logContainer">
+                    <p class="text-center text-muted">{{T "select_user"}} to view logs</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let autoRefresh = false;
+        let refreshInterval;
+        let isFirstLoad = true;
+        let currentUsername = '';
+
+        function setLanguage(lang) {
+            document.cookie = `lang=${lang}; path=/`;
+            window.location.reload();
+        }
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.overlay');
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadUsers();
+        });
+
+        async function loadUsers() {
+            try {
+                const response = await fetch('/api/logs/');
+                const users = await response.json();
+                const select = document.getElementById('userSelect');
+                select.innerHTML = '<option value="">{{T "select_user"}}</option>';
+                users.forEach(username => {
+                    const option = document.createElement('option');
+                    option.value = username;
+                    option.textContent = username;
+                    select.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading users:', error);
+            }
+        }
+
+        function onUserSelect() {
+            const username = document.getElementById('userSelect').value;
+            if (!username) {
+                stopAutoRefresh();
+                document.getElementById('logContainer').innerHTML = '<p class="text-center text-muted">{{T "select_user"}} to view logs</p>';
+                currentUsername = '';
+                isFirstLoad = true;
+                return;
+            }
+
+            // If user changed, reset first load flag
+            if (username !== currentUsername) {
+                isFirstLoad = true;
+                currentUsername = username;
+            }
+
+            // Stop previous refresh if any
+            stopAutoRefresh();
+            
+            // Load logs and start auto-refresh
+            loadLogs();
+            startAutoRefresh();
+        }
+
+        function showLoadingSpinner() {
+            const container = document.getElementById('logContainer');
+            container.innerHTML = `
+                <div class="spinner-container">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">{{T "loading"}}</span>
+                    </div>
+                    <p class="mt-2 text-muted">{{T "loading"}}</p>
+                </div>
+            `;
+        }
+
+        async function loadLogs() {
+            const username = document.getElementById('userSelect').value;
+            if (!username) {
+                document.getElementById('logContainer').innerHTML = '<p class="text-center text-muted">{{T "select_user"}} to view logs</p>';
+                return;
+            }
+
+            // Show spinner only on first load
+            if (isFirstLoad) {
+                showLoadingSpinner();
+            }
+
+            try {
+                const response = await fetch(`/api/logs/${username}`);
+                const logs = await response.json();
+                
+                const container = document.getElementById('logContainer');
+                if (logs.length === 0) {
+                    container.innerHTML = '<p class="text-center text-muted">No logs found</p>';
+                    isFirstLoad = false;
+                    return;
+                }
+
+                container.innerHTML = logs.map(log => {
+                    const timestamp = log.timestamp || '';
+                    const target = log.target || '';
+                    const userIP = log.user_ip || '';
+                    return `
+                        <div class="log-entry">
+                            <span class="text-muted">[${timestamp}]</span>
+                            ${target ? `<span class="text-primary">Target: ${target}</span>` : ''}
+                            ${userIP ? `<span class="text-info">| User IP: ${userIP}</span>` : ''}
+                            ${!target && !userIP ? `<span>${log.raw || ''}</span>` : ''}
+                        </div>
+                    `;
+                }).join('');
+                
+                // Auto-scroll to bottom
+                container.scrollTop = container.scrollHeight;
+                
+                // Mark first load as complete
+                isFirstLoad = false;
+            } catch (error) {
+                console.error('Error loading logs:', error);
+                document.getElementById('logContainer').innerHTML = '<p class="text-center text-danger">Error loading logs</p>';
+                isFirstLoad = false;
+            }
+        }
+
+        // Auto-refresh every 3 seconds
+        function startAutoRefresh() {
+            if (autoRefresh) return;
+            autoRefresh = true;
+            refreshInterval = setInterval(loadLogs, 3000);
+        }
+
+        function stopAutoRefresh() {
+            autoRefresh = false;
+            if (refreshInterval) {
+                clearInterval(refreshInterval);
+                refreshInterval = null;
+            }
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', function() {
+            stopAutoRefresh();
+        });
+    </script>
+    <footer class="text-center text-muted  py-3" style="border-top: 1px solid #dee2e6;">
+        <small>Abdal 4iProto Panel v{{.PanelVersion}} | {{.PanelAuthor}}</small>
+    </footer>
+</body>
+</html>
+
+

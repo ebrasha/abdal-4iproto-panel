@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="{{.Lang}}" dir="{{if eq .Lang "fa"}}rtl{{else}}ltr{{end}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <title>{{T "dashboard"}} - Abdal 4iProto Panel</title>
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    {{if eq .Lang "fa"}}<link href="/css/bootstrap.rtl.min.css" rel="stylesheet">{{end}}
+    <link href="/theme.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .logo {
+            max-height: 50px;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .navbar-toggler {
+            position: fixed;
+            top: 10px;
+            {{if eq .Lang "fa"}}right{{else}}left{{end}}: 10px;
+            z-index: 1001;
+            background-color: #007bff;
+            border: none;
+            padding: 8px 12px;
+        }
+        .navbar-toggler:focus {
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.5);
+        }
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 1000;
+                transform: translateX(-100%);
+                box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+            .overlay.show {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body class="theme-{{.Theme}}">
+    <button class="navbar-toggler d-md-none" type="button" onclick="toggleSidebar()" aria-label="Toggle navigation">
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+    </button>
+    <div class="overlay" onclick="toggleSidebar()"></div>
+    <div class="container-fluid">
+        <div class="row">
+            {{template "sidebar.html" .}}
+            <div class="col-md-10 main-content">
+                <h1>{{T "welcome"}}</h1>
+                <div class="row mt-4">
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{T "total_users"}}</h5>
+                                <h2 id="totalUsers">-</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{T "blocked_ips_count"}}</h5>
+                                <h2 id="blockedIPsCount">-</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{T "total_traffic"}}</h5>
+                                <h2 id="totalTraffic">-</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card">
+                            <div class="card-body">
+                                <h5 class="card-title">{{T "active_sessions"}}</h5>
+                                <h2 id="activeSessions">-</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function setLanguage(lang) {
+            document.cookie = `lang=${lang}; path=/`;
+            window.location.reload();
+        }
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.overlay');
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+        }
+        async function loadDashboard() {
+            try {
+                const [usersRes, blockedIPsRes, trafficRes, sessionsRes] = await Promise.all([
+                    fetch('/api/users'),
+                    fetch('/api/blocked-ips'),
+                    fetch('/api/traffic/'),
+                    fetch('/api/sessions')
+                ]);
+                const users = await usersRes.json();
+                const blockedIPs = await blockedIPsRes.json();
+                const traffic = await trafficRes.json();
+                const sessions = await sessionsRes.json();
+                document.getElementById('totalUsers').textContent = users.length;
+                document.getElementById('blockedIPsCount').textContent = blockedIPs.blocked ? blockedIPs.blocked.length : 0;
+                document.getElementById('activeSessions').textContent = sessions ? sessions.length : 0;
+                let totalTrafficMB = 0;
+                if (traffic && Array.isArray(traffic)) {
+                    traffic.forEach(t => {
+                        totalTrafficMB += t.total_mb || 0;
+                    });
+                }
+                document.getElementById('totalTraffic').textContent = totalTrafficMB.toFixed(2) + ' MB';
+            } catch (error) {
+                console.error('Error loading dashboard:', error);
+            }
+        }
+        loadDashboard();
+    </script>
+    <footer class="text-center text-muted  py-3" style="border-top: 1px solid #dee2e6;">
+        <small>Abdal 4iProto Panel v{{.PanelVersion}} | {{.PanelAuthor}}</small>
+    </footer>
+</body>
+</html>
+

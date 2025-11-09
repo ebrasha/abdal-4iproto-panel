@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="{{.Lang}}" dir="{{if eq .Lang "fa"}}rtl{{else}}ltr{{end}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <title>{{T "login"}} - Abdal 4iProto Panel</title>
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    {{if eq .Lang "fa"}}<link href="/css/bootstrap.rtl.min.css" rel="stylesheet">{{end}}
+    <link href="/theme.css" rel="stylesheet">
+    <style>
+        body.login-page {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-container {
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+        }
+        .logo {
+            max-height: 80px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body class="theme-{{.Theme}} login-page">
+    <div class="login-container">
+        <div class="text-center mb-4">
+            <img src="/img/logo.png" alt="Logo" class="logo" id="logoImage">
+            <h2>Abdal 4iProto Panel</h2>
+        </div>
+        {{if .Error}}
+        <div class="alert alert-danger" role="alert">
+            {{.Error}}
+        </div>
+        {{end}}
+        <form method="POST" action="/login">
+            <div class="mb-3">
+                <label for="username" class="form-label">{{T "username"}}</label>
+                <input type="text" class="form-control" id="username" name="username" required autofocus>
+            </div>
+            <div class="mb-3">
+                <label for="password" class="form-label">{{T "password"}}</label>
+                <input type="password" class="form-control" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">{{T "login"}}</button>
+        </form>
+        <div class="mt-3 text-center">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="setLanguage('en')">English</button>
+                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="setLanguage('fa')">فارسی</button>
+            </div>
+          
+            <hr>
+            <div class=" text-muted  py-3" >
+                <small> v{{.PanelVersion}} | {{T "programmer"}}: {{T "programmer_name"}}</small>
+            </div>
+        </div>
+    </div>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function setLanguage(lang) {
+            document.cookie = `lang=${lang}; path=/`;
+            window.location.reload();
+        }
+    </script>
+   
+</body>
+</html>
+

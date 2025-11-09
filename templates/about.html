@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="{{.Lang}}" dir="{{if eq .Lang "fa"}}rtl{{else}}ltr{{end}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <title>{{T "about"}} - Abdal 4iProto Panel</title>
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    {{if eq .Lang "fa"}}<link href="/css/bootstrap.rtl.min.css" rel="stylesheet">{{end}}
+    <link href="/theme.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .logo {
+            max-height: 50px;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .navbar-toggler {
+            position: fixed;
+            top: 10px;
+            {{if eq .Lang "fa"}}right{{else}}left{{end}}: 10px;
+            z-index: 1001;
+            background-color: #007bff;
+            border: none;
+            padding: 8px 12px;
+        }
+        .navbar-toggler:focus {
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.5);
+        }
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 1000;
+                transform: translateX(-100%);
+                box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+            .overlay.show {
+                display: block;
+            }
+        }
+        .about-card {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .social-links a {
+            margin: 10px;
+            text-decoration: none;
+        }
+        .social-links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body class="theme-{{.Theme}}">
+    <button class="navbar-toggler d-md-none" type="button" onclick="toggleSidebar()" aria-label="Toggle navigation">
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+    </button>
+    <div class="overlay" onclick="toggleSidebar()"></div>
+    <div class="container-fluid">
+        <div class="row">
+            {{template "sidebar.html" .}}
+            <div class="col-md-10 main-content">
+                <h1>{{T "about"}}</h1>
+                <div class="about-card">
+                    <div class="card mt-4">
+                        <div class="card-body">
+                            <h3 class="card-title">{{T "about_panel"}}</h3>
+                            <p class="card-text">{{T "about_description"}}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-body">
+                            <h4 class="card-title">{{T "programmer"}}</h4>
+                            <p class="card-text">
+                                <strong>{{T "name"}}:</strong> {{T "programmer_name"}}<br>
+                                <strong>{{T "email"}}:</strong> <a href="mailto:Prof.Shafiei@Gmail.com">Prof.Shafiei@Gmail.com</a>
+                            </p>
+                            
+                            <h5 class="mt-4">{{T "contact_info"}}</h5>
+                            <div class="social-links">
+                                <p>
+                                    <strong>{{T "github"}}:</strong> 
+                                    <a href="https://github.com/ebrasha" target="_blank">https://github.com/ebrasha</a>
+                                </p>
+                                <p>
+                                    <strong>{{T "twitter"}}:</strong> 
+                                    <a href="https://x.com/ProfShafiei" target="_blank">https://x.com/ProfShafiei</a>
+                                </p>
+                                <p>
+                                    <strong>{{T "linkedin"}}:</strong> 
+                                    <a href="https://www.linkedin.com/in/profshafiei/" target="_blank">https://www.linkedin.com/in/profshafiei/</a>
+                                </p>
+                                <p>
+                                    <strong>{{T "telegram"}}:</strong> 
+                                    <a href="https://t.me/ProfShafiei" target="_blank">https://t.me/ProfShafiei</a>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="card mt-4">
+                        <div class="card-body">
+                            <h4 class="card-title">{{T "quote"}}</h4>
+                            <p class="card-text fst-italic">
+                                "{{T "quote_text"}}"
+                            </p>
+                            <p class="text-end mt-3">– {{T "programmer_name_short"}}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function setLanguage(lang) {
+            document.cookie = `lang=${lang}; path=/`;
+            window.location.reload();
+        }
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.overlay');
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+        }
+    </script>
+    <footer class="text-center text-muted  py-3" style="border-top: 1px solid #dee2e6;">
+        <small>Abdal 4iProto Panel v{{.PanelVersion}} | {{.PanelAuthor}}</small>
+    </footer>
+</body>
+</html>
+

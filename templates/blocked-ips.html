@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="{{.Lang}}" dir="{{if eq .Lang "fa"}}rtl{{else}}ltr{{end}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <title>{{T "blocked_ips"}} - Abdal 4iProto Panel</title>
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    {{if eq .Lang "fa"}}<link href="/css/bootstrap.rtl.min.css" rel="stylesheet">{{end}}
+    <link href="/css/sweetalert2.min.css" rel="stylesheet">
+    <link href="/theme.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .logo {
+            max-height: 50px;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .navbar-toggler {
+            position: fixed;
+            top: 10px;
+            {{if eq .Lang "fa"}}right{{else}}left{{end}}: 10px;
+            z-index: 1001;
+            background-color: #007bff;
+            border: none;
+            padding: 8px 12px;
+        }
+        .navbar-toggler:focus {
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.5);
+        }
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 1000;
+                transform: translateX(-100%);
+                box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+            .overlay.show {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body class="theme-{{.Theme}}">
+    <button class="navbar-toggler d-md-none" type="button" onclick="toggleSidebar()" aria-label="Toggle navigation">
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+    </button>
+    <div class="overlay" onclick="toggleSidebar()"></div>
+    <div class="container-fluid">
+        <div class="row">
+            {{template "sidebar.html" .}}
+            <div class="col-md-10 main-content">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h1>{{T "blocked_ips"}}</h1>
+                    <button class="btn btn-primary" onclick="addIP()">{{T "add_ip"}}</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>IP Address</th>
+                                <th>{{T "actions"}}</th>
+                            </tr>
+                        </thead>
+                        <tbody id="blockedIPsTable">
+                            <tr><td colspan="3" class="text-center">{{T "loading"}}</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add IP Modal -->
+    <div class="modal fade" id="addIPModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{T "add_ip"}}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" class="form-control" id="newIP" placeholder="192.168.1.1">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">{{T "cancel"}}</button>
+                    <button type="button" class="btn btn-primary" onclick="saveIP()">{{T "save"}}</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/sweetalert2.all.min.js"></script>
+    <script>
+        let blockedIPs = [];
+        let addIPModal;
+
+        function setLanguage(lang) {
+            document.cookie = `lang=${lang}; path=/`;
+            window.location.reload();
+        }
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.overlay');
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            addIPModal = new bootstrap.Modal(document.getElementById('addIPModal'));
+            loadBlockedIPs();
+        });
+
+        async function loadBlockedIPs() {
+            try {
+                const response = await fetch('/api/blocked-ips');
+                const data = await response.json();
+                blockedIPs = data.blocked || [];
+                renderBlockedIPs();
+            } catch (error) {
+                console.error('Error loading blocked IPs:', error);
+            }
+        }
+
+        function renderBlockedIPs() {
+            const tbody = document.getElementById('blockedIPsTable');
+            if (blockedIPs.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center">No blocked IPs</td></tr>';
+                return;
+            }
+            tbody.innerHTML = blockedIPs.map((ip, index) => `
+                <tr>
+                    <td>${index + 1}</td>
+                    <td>${ip}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="removeIP('${ip}')">{{T "remove_ip"}}</button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function addIP() {
+            document.getElementById('newIP').value = '';
+            addIPModal.show();
+        }
+
+        async function saveIP() {
+            const newIP = document.getElementById('newIP').value.trim();
+            if (!newIP) {
+                await Swal.fire({
+                    icon: 'warning',
+                    title: '{{T "error"}}',
+                    text: '{{T "please_enter_ip"}}'
+                });
+                return;
+            }
+
+            if (blockedIPs.includes(newIP)) {
+                await Swal.fire({
+                    icon: 'warning',
+                    title: '{{T "error"}}',
+                    text: '{{T "ip_already_exists"}}'
+                });
+                return;
+            }
+
+            blockedIPs.push(newIP);
+            await saveBlockedIPs();
+            addIPModal.hide();
+        }
+
+        async function removeIP(ip) {
+            const result = await Swal.fire({
+                icon: 'warning',
+                title: '{{T "error"}}',
+                text: '{{T "confirm_remove_ip"}}'.replace('{ip}', ip),
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: '{{T "yes_remove"}}',
+                cancelButtonText: '{{T "cancel"}}'
+            });
+
+            if (!result.isConfirmed) return;
+
+            blockedIPs = blockedIPs.filter(i => i !== ip);
+            await saveBlockedIPs();
+        }
+
+        async function saveBlockedIPs() {
+            try {
+                const response = await fetch('/api/blocked-ips', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ blocked: blockedIPs })
+                });
+
+                if (response.ok) {
+                    loadBlockedIPs();
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '{{T "success"}}',
+                        text: '{{T "blocked_ips_saved_success"}}',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    const error = await response.text();
+                    await Swal.fire({
+                        icon: 'error',
+                        title: '{{T "error"}}',
+                        text: error
+                    });
+                }
+            } catch (error) {
+                console.error('Error saving blocked IPs:', error);
+                await Swal.fire({
+                    icon: 'error',
+                    title: '{{T "error"}}',
+                    text: '{{T "error_saving_blocked_ips"}}'
+                });
+            }
+        }
+    </script>
+    <footer class="text-center text-muted  py-3" style="border-top: 1px solid #dee2e6;">
+        <small>Abdal 4iProto Panel v{{.PanelVersion}} | {{.PanelAuthor}}</small>
+    </footer>
+</body>
+</html>
+

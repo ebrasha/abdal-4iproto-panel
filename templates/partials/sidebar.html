@@ -1,0 +1,20 @@
+<div class="col-md-2 sidebar" id="sidebar">
+    <div class="text-center py-3">
+        <img src="/img/logo.png" alt="Logo" class="logo mb-3">
+        <h5>Abdal 4iProto Panel</h5>
+    </div>
+    <nav class="nav flex-column">
+        <a class="nav-link{{if eq .CurrentPage "/"}} active{{end}}" href="/">{{T "dashboard"}}</a>
+        <a class="nav-link{{if eq .CurrentPage "/users"}} active{{end}}" href="/users">{{T "users"}}</a>
+        <a class="nav-link{{if eq .CurrentPage "/server-config"}} active{{end}}" href="/server-config">{{T "server_config"}}</a>
+        <a class="nav-link{{if eq .CurrentPage "/blocked-ips"}} active{{end}}" href="/blocked-ips">{{T "blocked_ips"}}</a>
+        <a class="nav-link{{if eq .CurrentPage "/logs"}} active{{end}}" href="/logs">{{T "logs"}}</a>
+        <a class="nav-link{{if eq .CurrentPage "/blocked-access"}} active{{end}}" href="/blocked-access">{{T "blocked_access"}}</a>
+        <a class="nav-link{{if eq .CurrentPage "/traffic"}} active{{end}}" href="/traffic">{{T "traffic"}}</a>
+        <a class="nav-link{{if eq .CurrentPage "/sessions"}} active{{end}}" href="/sessions">{{T "sessions"}}</a>
+        <a class="nav-link{{if eq .CurrentPage "/panel-config"}} active{{end}}" href="/panel-config">{{T "panel_config"}}</a>
+        <a class="nav-link{{if eq .CurrentPage "/about"}} active{{end}}" href="/about">{{T "about"}}</a>
+        <a class="nav-link{{if eq .CurrentPage "/logout"}} active{{end}}" href="/logout">{{T "logout"}}</a>
+    </nav>
+</div>
+

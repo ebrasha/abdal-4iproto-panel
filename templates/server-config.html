@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="{{.Lang}}" dir="{{if eq .Lang "fa"}}rtl{{else}}ltr{{end}}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/x-icon" href="/favicon.ico">
+    <title>{{T "server_config"}} - Abdal 4iProto Panel</title>
+    <link href="/css/bootstrap.min.css" rel="stylesheet">
+    {{if eq .Lang "fa"}}<link href="/css/bootstrap.rtl.min.css" rel="stylesheet">{{end}}
+    <link href="/css/sweetalert2.min.css" rel="stylesheet">
+    <link href="/theme.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            min-height: 100vh;
+            background-color: #f8f9fa;
+        }
+        .logo {
+            max-height: 50px;
+        }
+        .main-content {
+            padding: 20px;
+        }
+        .navbar-toggler {
+            position: fixed;
+            top: 10px;
+            {{if eq .Lang "fa"}}right{{else}}left{{end}}: 10px;
+            z-index: 1001;
+            background-color: #007bff;
+            border: none;
+            padding: 8px 12px;
+        }
+        .navbar-toggler:focus {
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.5);
+        }
+        .sidebar {
+            transition: transform 0.3s ease;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 1000;
+                transform: translateX(-100%);
+                box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+            }
+            .sidebar.show {
+                transform: translateX(0);
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background-color: rgba(0,0,0,0.5);
+                z-index: 999;
+            }
+            .overlay.show {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body class="theme-{{.Theme}}">
+    <button class="navbar-toggler d-md-none" type="button" onclick="toggleSidebar()" aria-label="Toggle navigation">
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+        <span style="display: block; width: 22px; height: 2px; background-color: white; margin: 4px 0;"></span>
+    </button>
+    <div class="overlay" onclick="toggleSidebar()"></div>
+    <div class="container-fluid">
+        <div class="row">
+            {{template "sidebar.html" .}}
+            <div class="col-md-10 main-content">
+                <h1>{{T "server_config"}}</h1>
+                <form id="serverConfigForm" class="mt-4">
+                    <div class="mb-3">
+                        <label class="form-label">{{T "ports"}} ({{T "comma_separated"}})</label>
+                        <input type="text" class="form-control" id="ports" required>
+                        <small class="form-text text-muted">Example: 64235, 64236, 64237</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{T "shell"}}</label>
+                        <input type="text" class="form-control" id="shell" required>
+                        <small class="form-text text-muted">Windows: cmd.exe, Linux: /bin/bash</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{T "max_auth_attempts"}}</label>
+                        <input type="number" class="form-control" id="maxAuthAttempts" min="1" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{T "server_version"}}</label>
+                        <input type="text" class="form-control" id="serverVersion" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{T "private_key_file"}}</label>
+                        <input type="text" class="form-control" id="privateKeyFile" required>
+                        <small class="form-text text-muted">Example: id_rsa</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{T "public_key_file"}}</label>
+                        <input type="text" class="form-control" id="publicKeyFile" required>
+                        <small class="form-text text-muted">Example: id_rsa.pub</small>
+                    </div>
+                    <div class="mb-3">
+                        <button type="button" class="btn btn-primary" onclick="saveConfig()">{{T "save"}}</button>
+                        <button type="button" class="btn btn-warning ms-2" onclick="restartServerService()">{{T "restart_server_service"}}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script src="/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/sweetalert2.all.min.js"></script>
+    <script>
+        function setLanguage(lang) {
+            document.cookie = `lang=${lang}; path=/`;
+            window.location.reload();
+        }
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.overlay');
+            sidebar.classList.toggle('show');
+            overlay.classList.toggle('show');
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConfig();
+        });
+
+        async function loadConfig() {
+            try {
+                const response = await fetch('/api/server-config');
+                const config = await response.json();
+                document.getElementById('ports').value = config.ports ? config.ports.join(', ') : '';
+                document.getElementById('shell').value = config.shell || '';
+                document.getElementById('maxAuthAttempts').value = config.max_auth_attempts || 3;
+                document.getElementById('serverVersion').value = config.server_version || '';
+                document.getElementById('privateKeyFile').value = config.private_key_file || 'id_rsa';
+                document.getElementById('publicKeyFile').value = config.public_key_file || 'id_rsa.pub';
+            } catch (error) {
+                console.error('Error loading config:', error);
+            }
+        }
+
+        async function saveConfig() {
+            const portsStr = document.getElementById('ports').value;
+            const ports = portsStr.split(',').map(p => parseInt(p.trim())).filter(p => !isNaN(p));
+            
+            const config = {
+                ports: ports,
+                shell: document.getElementById('shell').value,
+                max_auth_attempts: parseInt(document.getElementById('maxAuthAttempts').value),
+                server_version: document.getElementById('serverVersion').value,
+                private_key_file: document.getElementById('privateKeyFile').value,
+                public_key_file: document.getElementById('publicKeyFile').value
+            };
+
+            try {
+                const response = await fetch('/api/server-config', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(config)
+                });
+
+                if (response.ok) {
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '{{T "success"}}',
+                        text: '{{T "config_saved_success_server"}}',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    const error = await response.text();
+                    await Swal.fire({
+                        icon: 'error',
+                        title: '{{T "error"}}',
+                        text: error
+                    });
+                }
+            } catch (error) {
+                console.error('Error saving config:', error);
+                await Swal.fire({
+                    icon: 'error',
+                    title: '{{T "error"}}',
+                    text: '{{T "error_saving_config"}}'
+                });
+            }
+        }
+
+        async function restartServerService() {
+            const result = await Swal.fire({
+                icon: 'warning',
+                title: '{{T "error"}}',
+                text: '{{T "confirm_restart_server"}}',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: '{{T "yes_restart"}}',
+                cancelButtonText: '{{T "cancel"}}'
+            });
+
+            if (!result.isConfirmed) return;
+
+            try {
+                const response = await fetch('/api/restart-server-service', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    await Swal.fire({
+                        icon: 'success',
+                        title: '{{T "success"}}',
+                        text: '{{T "server_restart_success"}}',
+                        timer: 2000,
+                        showConfirmButton: false
+                    });
+                } else {
+                    const error = await response.text();
+                    await Swal.fire({
+                        icon: 'error',
+                        title: '{{T "error"}}',
+                        text: error
+                    });
+                }
+            } catch (error) {
+                console.error('Error restarting server service:', error);
+                await Swal.fire({
+                    icon: 'error',
+                    title: '{{T "error"}}',
+                    text: '{{T "error_restarting_server"}}'
+                });
+            }
+        }
+    </script>
+    <footer class="text-center text-muted  py-3" style="border-top: 1px solid #dee2e6;">
+        <small>Abdal 4iProto Panel v{{.PanelVersion}} | {{.PanelAuthor}}</small>
+    </footer>
+</body>
+</html>
+
