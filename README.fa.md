@@ -6,6 +6,9 @@
   <img src="scr.jpg" alt="Abdal 4iProto Panel Logo"  >
 </div>
 
+<div align="right">
+  <img src="panel.jpg" alt="Abdal 4iProto Panel Logo"  >
+</div>
 
 ## 📘 زبان‌های دیگر
 
