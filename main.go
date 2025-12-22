@@ -47,46 +47,46 @@ import (
 var embeddedFiles embed.FS
 
 const (
-	panelConfigFile  = "abdal-4iproto-panel.json"
-	configFile       = "server_config.json"
-	usersFile        = "users.json"
-	blockedIPsFile   = "blocked_ips.json"
-	usersLogDir      = "users_log"
-	blockedAccessDir = "blocked_access"
-	usersTrafficDir  = "users_traffic"
-	sessionsDBPath   = "data/sessions/sessions.db"
-	sessionsTempDBPath = "data/sessions/sessions-temp.db"
-	sessionsBucket   = "sessions"
+	panelConfigFile        = "abdal-4iproto-panel.json"
+	configFile             = "server_config.json"
+	usersFile              = "users.json"
+	blockedIPsFile         = "blocked_ips.json"
+	usersLogDir            = "users_log"
+	blockedAccessDir       = "blocked_access"
+	usersTrafficDir        = "users_traffic"
+	sessionsDBPath         = "data/sessions/sessions.db"
+	sessionsTempDBPath     = "data/sessions/sessions-temp.db"
+	sessionsBucket         = "sessions"
 	sessionsUpdateInterval = 15 * time.Second
-	defaultPort         = "8080"
-	windowsServerService = "Abdal4iProtoServer"
-	linuxServerService   = "abdal-4iproto-server"
-	windowsPanelService  = "Abdal4iProtoPanel"
-	linuxPanelService    = "abdal-4iproto-panel"
+	defaultPort            = "8080"
+	windowsServerService   = "Abdal4iProtoServer"
+	linuxServerService     = "abdal-4iproto-server"
+	windowsPanelService    = "Abdal4iProtoPanel"
+	linuxPanelService      = "abdal-4iproto-panel"
 )
 
 // ServerConfig represents the server configuration
 type ServerConfig struct {
-	Ports            []int  `json:"ports"`
-	Shell            string `json:"shell"`
-	MaxAuthAttempts  int    `json:"max_auth_attempts"`
-	ServerVersion    string `json:"server_version"`
-	PrivateKeyFile   string `json:"private_key_file"`
-	PublicKeyFile    string `json:"public_key_file"`
+	Ports           []int  `json:"ports"`
+	Shell           string `json:"shell"`
+	MaxAuthAttempts int    `json:"max_auth_attempts"`
+	ServerVersion   string `json:"server_version"`
+	PrivateKeyFile  string `json:"private_key_file"`
+	PublicKeyFile   string `json:"public_key_file"`
 }
 
 // User represents a user in the system
 type User struct {
-	Username         string   `json:"username"`
-	Password         string   `json:"password"`
-	Role             string   `json:"role"`
-	BlockedDomains   []string `json:"blocked_domains"`
-	BlockedIPs       []string `json:"blocked_ips"`
-	Log              string   `json:"log"`
-	MaxSessions      int      `json:"max_sessions"`
-	SessionTTLSeconds int     `json:"session_ttl_seconds"`
-	MaxSpeedKbps     int      `json:"max_speed_kbps"`
-	MaxTotalMB       int      `json:"max_total_mb"`
+	Username          string   `json:"username"`
+	Password          string   `json:"password"`
+	Role              string   `json:"role"`
+	BlockedDomains    []string `json:"blocked_domains"`
+	BlockedIPs        []string `json:"blocked_ips"`
+	Log               string   `json:"log"`
+	MaxSessions       int      `json:"max_sessions"`
+	SessionTTLSeconds int      `json:"session_ttl_seconds"`
+	MaxSpeedKbps      int      `json:"max_speed_kbps"`
+	MaxTotalMB        int      `json:"max_total_mb"`
 }
 
 // BlockedIPs represents the blocked IPs configuration
@@ -96,15 +96,15 @@ type BlockedIPs struct {
 
 // TrafficData represents user traffic information
 type TrafficData struct {
-	Username          string `json:"username"`
-	IP                string `json:"ip"`
-	LastBytesSent     int64  `json:"last_bytes_sent"`
-	LastBytesReceived int64  `json:"last_bytes_received"`
-	LastBytesTotal    int64  `json:"last_bytes_total"`
-	TotalBytesSent    int64  `json:"total_bytes_sent"`
-	TotalBytesReceived int64 `json:"total_bytes_received"`
-	TotalBytes        int64  `json:"total_bytes"`
-	LastTimestamp     string `json:"last_timestamp"`
+	Username           string `json:"username"`
+	IP                 string `json:"ip"`
+	LastBytesSent      int64  `json:"last_bytes_sent"`
+	LastBytesReceived  int64  `json:"last_bytes_received"`
+	LastBytesTotal     int64  `json:"last_bytes_total"`
+	TotalBytesSent     int64  `json:"total_bytes_sent"`
+	TotalBytesReceived int64  `json:"total_bytes_received"`
+	TotalBytes         int64  `json:"total_bytes"`
+	LastTimestamp      string `json:"last_timestamp"`
 }
 
 // SessionInfo represents session information
@@ -120,23 +120,23 @@ type SessionInfo struct {
 
 // PanelConfig represents the panel configuration
 type PanelConfig struct {
-	Port            int      `json:"port"`
-	Username        string   `json:"username"`
-	Password        string   `json:"password"`
-	Logging         bool     `json:"logging"`
-	BlockedIPs      []string `json:"blocked_ips"`
-	MaxLoginAttempts int    `json:"max_login_attempts"`
-	LoginAttemptWindow int  `json:"login_attempt_window"` // in seconds - time window for counting attempts
-	BlockDuration      int    `json:"block_duration"`      // in seconds - duration IP remains blocked after exceeding max attempts
-	Theme              string `json:"theme"`              // theme name: normal, ebrasha-dark
+	Port               int      `json:"port"`
+	Username           string   `json:"username"`
+	Password           string   `json:"password"`
+	Logging            bool     `json:"logging"`
+	BlockedIPs         []string `json:"blocked_ips"`
+	MaxLoginAttempts   int      `json:"max_login_attempts"`
+	LoginAttemptWindow int      `json:"login_attempt_window"` // in seconds - time window for counting attempts
+	BlockDuration      int      `json:"block_duration"`       // in seconds - duration IP remains blocked after exceeding max attempts
+	Theme              string   `json:"theme"`                // theme name: normal, ebrasha-dark
 }
 
 // LoginAttempt tracks login attempts
 type LoginAttempt struct {
-	IP        string
-	Attempts  int
-	LastAttempt time.Time
-	Blocked   bool
+	IP           string
+	Attempts     int
+	LastAttempt  time.Time
+	Blocked      bool
 	BlockedUntil time.Time
 }
 
@@ -152,7 +152,7 @@ var loginAttempts = make(map[string]*LoginAttempt)
 var loginAttemptsMutex sync.RWMutex
 
 const (
-	panelVersion = "2.28"
+	panelVersion = "2.29"
 	panelAuthor  = "Ebrahim Shafiei (EbraSha)"
 	serviceName  = "Abdal4iProtoPanel"
 )
@@ -183,14 +183,14 @@ func runServer() {
 	if err != nil {
 		log.Printf("Warning: Could not load panel config, using defaults: %v", err)
 		panelConfig = &PanelConfig{
-			Port:              8080,
-			Username:          "admin",
-			Password:          "admin123",
-			Logging:           true,
-			BlockedIPs:        []string{},
-			MaxLoginAttempts:  5,
-			LoginAttemptWindow: 300, // 5 minutes in seconds
-			BlockDuration:      3600, // 1 hour in seconds
+			Port:               8080,
+			Username:           "admin",
+			Password:           "admin123",
+			Logging:            true,
+			BlockedIPs:         []string{},
+			MaxLoginAttempts:   5,
+			LoginAttemptWindow: 300,      // 5 minutes in seconds
+			BlockDuration:      3600,     // 1 hour in seconds
 			Theme:              "normal", // default theme
 		}
 		// Save default config
@@ -202,7 +202,7 @@ func runServer() {
 
 	// Log startup
 	panelLogger.Info("=== Abdal 4iProto Panel Starting ===")
-	panelLogger.Info(fmt.Sprintf("Panel Configuration Loaded - Port: %d, Username: %s, Logging: %v", 
+	panelLogger.Info(fmt.Sprintf("Panel Configuration Loaded - Port: %d, Username: %s, Logging: %v",
 		panelConfig.Port, panelConfig.Username, panelConfig.Logging))
 
 	// Load translations
@@ -214,10 +214,10 @@ func runServer() {
 	// Static files
 	staticFS, _ := fs.Sub(embeddedFiles, "css")
 	mux.Handle("/css/", http.StripPrefix("/css/", http.FileServer(http.FS(staticFS))))
-	
+
 	staticJS, _ := fs.Sub(embeddedFiles, "js")
 	mux.Handle("/js/", http.StripPrefix("/js/", http.FileServer(http.FS(staticJS))))
-	
+
 	mux.HandleFunc("/img/logo.png", serveLogo)
 	mux.HandleFunc("/logo.png", serveLogo) // Backward compatibility
 	mux.HandleFunc("/favicon.ico", serveFavicon)
@@ -266,17 +266,17 @@ func runServer() {
 	panelLogger.Info(fmt.Sprintf("Starting Abdal 4iProto Panel server on port %s", portStr))
 	panelLogger.Info(fmt.Sprintf("Access the panel at: http://localhost:%s", portStr))
 	panelLogger.Info(fmt.Sprintf("Default credentials - Username: %s, Password: %s", panelConfig.Username, panelConfig.Password))
-	
+
 	log.Printf("Starting Abdal 4iProto Panel server on port %s", portStr)
 	log.Printf("Access the panel at: http://localhost:%s", portStr)
 	log.Printf("Default credentials - Username: %s, Password: %s", panelConfig.Username, panelConfig.Password)
-	
+
 	// Initialize sessions database copying
 	panelLogger.Info("Initializing sessions database copy mechanism...")
 	if err := copySessionsDB(); err != nil {
 		panelLogger.Warning(fmt.Sprintf("Failed to copy sessions database on startup: %v", err))
 	}
-	
+
 	// Start periodic sessions database update
 	sessionsUpdateTicker = time.NewTicker(sessionsUpdateInterval)
 	sessionsUpdateStop = make(chan bool)
@@ -285,7 +285,7 @@ func runServer() {
 
 	// Wrap mux with logging middleware
 	loggedMux := loggingMiddleware(mux)
-	
+
 	// Create HTTP server
 	httpServer = &http.Server{
 		Addr:    ":" + portStr,
@@ -306,7 +306,7 @@ func runServer() {
 // cleanup performs cleanup operations on shutdown
 func cleanup() {
 	panelLogger.Info("Panel shutting down...")
-	
+
 	// Stop HTTP server gracefully
 	if httpServer != nil {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -315,38 +315,37 @@ func cleanup() {
 			panelLogger.Warning(fmt.Sprintf("Error shutting down HTTP server: %v", err))
 		}
 	}
-	
+
 	// Stop sessions update ticker
 	if sessionsUpdateTicker != nil {
 		sessionsUpdateTicker.Stop()
 	}
-	
+
 	// Close sessions update stop channel
 	if sessionsUpdateStop != nil {
 		close(sessionsUpdateStop)
 	}
-	
+
 	// Remove temporary sessions database
 	if err := os.Remove(sessionsTempDBPath); err != nil && !os.IsNotExist(err) {
 		panelLogger.Warning(fmt.Sprintf("Failed to remove temp sessions database: %v", err))
 	}
-	
+
 	// Close logger
 	panelLogger.Close()
 }
-
 
 // loggingMiddleware logs all HTTP requests
 func loggingMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		start := time.Now()
-		
+
 		// Create a ResponseWriter wrapper to capture status code
 		ww := &responseWriter{ResponseWriter: w, statusCode: http.StatusOK}
-		
+
 		// Process request
 		next.ServeHTTP(ww, r)
-		
+
 		// Log request
 		duration := time.Since(start)
 		panelLogger.Request(r.Method, r.URL.Path, r.RemoteAddr, ww.statusCode, duration)
@@ -371,7 +370,7 @@ func serveLogo(w http.ResponseWriter, r *http.Request) {
 	if panelConfig != nil && panelConfig.Theme != "" {
 		theme = panelConfig.Theme
 	}
-	
+
 	// Serve logo based on theme
 	var logoFile string
 	if theme == "ebrasha-dark" {
@@ -379,7 +378,7 @@ func serveLogo(w http.ResponseWriter, r *http.Request) {
 	} else {
 		logoFile = "img/logo.png"
 	}
-	
+
 	logoData, err := embeddedFiles.ReadFile(logoFile)
 	if err != nil {
 		// Fallback to default logo if theme logo not found
@@ -400,7 +399,7 @@ func serveFavicon(w http.ResponseWriter, r *http.Request) {
 	if panelConfig != nil && panelConfig.Theme != "" {
 		theme = panelConfig.Theme
 	}
-	
+
 	// Serve favicon based on theme
 	var faviconFile string
 	if theme == "ebrasha-dark" {
@@ -408,7 +407,7 @@ func serveFavicon(w http.ResponseWriter, r *http.Request) {
 	} else {
 		faviconFile = "img/icon.ico"
 	}
-	
+
 	faviconData, err := embeddedFiles.ReadFile(faviconFile)
 	if err != nil {
 		// Fallback to default favicon if theme favicon not found
@@ -429,7 +428,7 @@ func serveThemeCSS(w http.ResponseWriter, r *http.Request) {
 	if panelConfig != nil && panelConfig.Theme != "" {
 		theme = panelConfig.Theme
 	}
-	
+
 	// Serve theme CSS file
 	cssFile := fmt.Sprintf("css/theme-%s.css", theme)
 	cssData, err := embeddedFiles.ReadFile(cssFile)
@@ -448,7 +447,7 @@ func serveThemeCSS(w http.ResponseWriter, r *http.Request) {
 // loadTranslations loads translation files
 func loadTranslations() {
 	translations = make(TranslationData)
-	
+
 	// Load English translations
 	enData, err := embeddedFiles.ReadFile("translations/en.json")
 	if err == nil {
@@ -501,7 +500,7 @@ func getLanguageFromRequest(r *http.Request) string {
 // renderTemplate renders an HTML template with translations
 func renderTemplate(w http.ResponseWriter, r *http.Request, templateName string, data map[string]interface{}) {
 	lang := getLanguageFromRequest(r)
-	
+
 	tmplData := make(map[string]interface{})
 	if data != nil {
 		for k, v := range data {
@@ -509,14 +508,14 @@ func renderTemplate(w http.ResponseWriter, r *http.Request, templateName string,
 		}
 	}
 	tmplData["Lang"] = lang
-	
+
 	// Add current page path for sidebar active link
 	currentPage := r.URL.Path
 	if currentPage == "" {
 		currentPage = "/"
 	}
 	tmplData["CurrentPage"] = currentPage
-	
+
 	// Create translation function
 	tmplData["T"] = func(key string) string {
 		return getTranslation(lang, key)
@@ -526,11 +525,11 @@ func renderTemplate(w http.ResponseWriter, r *http.Request, templateName string,
 	tmplData["eq"] = func(a, b string) bool {
 		return a == b
 	}
-	
+
 	// Add panel version and author to all templates
 	tmplData["PanelVersion"] = panelVersion
 	tmplData["PanelAuthor"] = panelAuthor
-	
+
 	// Add theme to template data
 	theme := "normal"
 	if panelConfig != nil && panelConfig.Theme != "" {
@@ -550,7 +549,7 @@ func renderTemplate(w http.ResponseWriter, r *http.Request, templateName string,
 
 	// Parse all templates and partials for includes
 	tmpl := template.New(templateName).Funcs(funcMap)
-	
+
 	// Read and parse main template first
 	mainTemplatePath := "templates/" + templateName
 	mainTemplateContent, err := embeddedFiles.ReadFile(mainTemplatePath)
@@ -559,14 +558,14 @@ func renderTemplate(w http.ResponseWriter, r *http.Request, templateName string,
 		http.Error(w, fmt.Sprintf("Template not found: %v", err), http.StatusInternalServerError)
 		return
 	}
-	
+
 	// Parse main template
 	if _, err := tmpl.Parse(string(mainTemplateContent)); err != nil {
 		panelLogger.Error(fmt.Sprintf("Template parse error: %s", mainTemplatePath), err)
 		http.Error(w, fmt.Sprintf("Template parse error: %v", err), http.StatusInternalServerError)
 		return
 	}
-	
+
 	// Read and parse sidebar partial
 	sidebarPath := "templates/partials/sidebar.html"
 	sidebarContent, err := embeddedFiles.ReadFile(sidebarPath)
@@ -642,23 +641,23 @@ func apiUsersHandler(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		
+
 		// Load traffic data for each user to show usage status
 		usersWithTraffic := make([]map[string]interface{}, len(users))
 		for i, user := range users {
 			userMap := map[string]interface{}{
-				"username":           user.Username,
-				"password":           user.Password,
-				"role":               user.Role,
-				"blocked_domains":    user.BlockedDomains,
-				"blocked_ips":        user.BlockedIPs,
-				"log":                user.Log,
-				"max_sessions":       user.MaxSessions,
+				"username":            user.Username,
+				"password":            user.Password,
+				"role":                user.Role,
+				"blocked_domains":     user.BlockedDomains,
+				"blocked_ips":         user.BlockedIPs,
+				"log":                 user.Log,
+				"max_sessions":        user.MaxSessions,
 				"session_ttl_seconds": user.SessionTTLSeconds,
-				"max_speed_kbps":     user.MaxSpeedKbps,
-				"max_total_mb":       user.MaxTotalMB,
+				"max_speed_kbps":      user.MaxSpeedKbps,
+				"max_total_mb":        user.MaxTotalMB,
 			}
-			
+
 			// Load traffic data
 			traffic, err := loadTrafficData(user.Username)
 			if err == nil && traffic != nil {
@@ -668,10 +667,10 @@ func apiUsersHandler(w http.ResponseWriter, r *http.Request) {
 				userMap["traffic_limit_mb"] = maxMB
 				userMap["traffic_exceeded"] = maxMB > 0 && totalMB > maxMB
 			}
-			
+
 			usersWithTraffic[i] = userMap
 		}
-		
+
 		json.NewEncoder(w).Encode(usersWithTraffic)
 
 	case http.MethodPost:
@@ -890,15 +889,15 @@ func apiPanelConfigHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Update global config
 		panelConfig = &config
-		
+
 		// Update logger based on new logging setting
 		panelLogger = NewLogger(config.Logging)
 
 		panelLogger.Info("Panel configuration updated")
-		
+
 		// Send success response first
 		json.NewEncoder(w).Encode(map[string]string{"status": "success"})
-		
+
 		// Restart panel service in a goroutine (after response is sent)
 		go func() {
 			time.Sleep(500 * time.Millisecond) // Small delay to ensure response is sent
@@ -1083,18 +1082,18 @@ func apiTrafficHandler(w http.ResponseWriter, r *http.Request) {
 			traffic, err := loadTrafficData(user.Username)
 			if err == nil && traffic != nil {
 				trafficMap := map[string]interface{}{
-					"username":            traffic.Username,
-					"ip":                  traffic.IP,
-					"last_bytes_sent":     traffic.LastBytesSent,
-					"last_bytes_received": traffic.LastBytesReceived,
-					"last_bytes_total":    traffic.LastBytesTotal,
-					"total_bytes_sent":    traffic.TotalBytesSent,
+					"username":             traffic.Username,
+					"ip":                   traffic.IP,
+					"last_bytes_sent":      traffic.LastBytesSent,
+					"last_bytes_received":  traffic.LastBytesReceived,
+					"last_bytes_total":     traffic.LastBytesTotal,
+					"total_bytes_sent":     traffic.TotalBytesSent,
 					"total_bytes_received": traffic.TotalBytesReceived,
-					"total_bytes":         traffic.TotalBytes,
-					"last_timestamp":      traffic.LastTimestamp,
-					"total_mb":            float64(traffic.TotalBytes) / (1024 * 1024),
-					"max_total_mb":        user.MaxTotalMB,
-					"exceeded":            user.MaxTotalMB > 0 && float64(traffic.TotalBytes)/(1024*1024) > float64(user.MaxTotalMB),
+					"total_bytes":          traffic.TotalBytes,
+					"last_timestamp":       traffic.LastTimestamp,
+					"total_mb":             float64(traffic.TotalBytes) / (1024 * 1024),
+					"max_total_mb":         user.MaxTotalMB,
+					"exceeded":             user.MaxTotalMB > 0 && float64(traffic.TotalBytes)/(1024*1024) > float64(user.MaxTotalMB),
 				}
 				trafficList = append(trafficList, trafficMap)
 			}
@@ -1300,12 +1299,18 @@ func copySessionsDB() error {
 		return fmt.Errorf("failed to create sessions directory: %w", err)
 	}
 
-	// Check if source database exists
+	// Check if source database exists and is readable
 	if _, err := os.Stat(sessionsDBPath); err != nil {
 		if os.IsNotExist(err) {
 			// Database doesn't exist, remove temp file if exists
 			os.Remove(sessionsTempDBPath)
 			return nil
+		}
+		if os.IsPermission(err) {
+			if runtime.GOOS == "windows" {
+				return fmt.Errorf("permission denied: cannot access source database %s. On Windows, ensure the service account has read access to the file and directory", sessionsDBPath)
+			}
+			return fmt.Errorf("permission denied: cannot access source database %s", sessionsDBPath)
 		}
 		return fmt.Errorf("failed to stat sessions database: %w", err)
 	}
@@ -1322,7 +1327,14 @@ func copySessionsDB() error {
 	}
 	defer sourceFile.Close()
 
-	destFile, err := os.Create(sessionsTempDBPath)
+	// On Windows, use 0666 (read-write for all) to ensure file is accessible
+	// On Linux, we can use 0444 (read-only) for better security
+	fileMode := os.FileMode(0666)
+	if runtime.GOOS != "windows" {
+		fileMode = 0444
+	}
+
+	destFile, err := os.OpenFile(sessionsTempDBPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, fileMode)
 	if err != nil {
 		return fmt.Errorf("failed to create temp database: %w", err)
 	}
@@ -1333,9 +1345,12 @@ func copySessionsDB() error {
 		return fmt.Errorf("failed to copy database: %w", err)
 	}
 
-	// Set permissions on temp file
-	if err := os.Chmod(sessionsTempDBPath, 0444); err != nil {
-		panelLogger.Warning(fmt.Sprintf("Failed to set permissions on temp database: %v", err))
+	// Set permissions on temp file (works on Linux, mostly no-op on Windows)
+	// On Windows, file permissions are handled by ACLs, not chmod
+	if runtime.GOOS != "windows" {
+		if err := os.Chmod(sessionsTempDBPath, 0444); err != nil {
+			panelLogger.Warning(fmt.Sprintf("Failed to set permissions on temp database: %v", err))
+		}
 	}
 
 	panelLogger.Debug("Sessions database copied successfully")
@@ -1390,22 +1405,32 @@ func loadAllSessions() ([]SessionInfo, error) {
 	if runtime.GOOS == "linux" {
 		timeout = 120 * time.Second // Very long timeout for Linux when file is locked
 	}
-	
+
 	// Always use ReadOnly mode for reading from temp file (doesn't lock the file)
 	// Use NoGrowSync and NoSync for better compatibility
-	// File mode 0444 (read-only) is safe for ReadOnly access
-	db, err := bbolt.Open(sessionsTempDBPath, 0444, &bbolt.Options{
-		Timeout:     timeout,
-		ReadOnly:    true, // ReadOnly mode doesn't lock the file - allows concurrent access
-		NoGrowSync:  true, // Don't sync on grow - helps with locked files
-		NoSync:      true, // Don't sync - helps with ReadOnly on locked files
-		MmapFlags:   0,    // Use default mmap flags
+	// On Windows, use 0666 (read-write) to ensure file is accessible
+	// On Linux, 0444 (read-only) is safe for ReadOnly access
+	fileMode := os.FileMode(0666)
+	if runtime.GOOS != "windows" {
+		fileMode = 0444
+	}
+
+	db, err := bbolt.Open(sessionsTempDBPath, fileMode, &bbolt.Options{
+		Timeout:    timeout,
+		ReadOnly:   true, // ReadOnly mode doesn't lock the file - allows concurrent access
+		NoGrowSync: true, // Don't sync on grow - helps with locked files
+		NoSync:     true, // Don't sync - helps with ReadOnly on locked files
+		MmapFlags:  0,    // Use default mmap flags
 	})
 	if err != nil {
 		panelLogger.Error(fmt.Sprintf("Failed to open sessions temp database in ReadOnly mode: %s", sessionsTempDBPath), err)
 		// Check if it's a permission issue
 		if os.IsPermission(err) {
-			return nil, fmt.Errorf("permission denied: check file permissions for %s (should be readable)", sessionsDBPath)
+			// On Windows, provide more helpful error message
+			if runtime.GOOS == "windows" {
+				return nil, fmt.Errorf("permission denied: check file permissions for %s (should be readable). On Windows, ensure the service account has read access to the file and directory", sessionsTempDBPath)
+			}
+			return nil, fmt.Errorf("permission denied: check file permissions for %s (should be readable)", sessionsTempDBPath)
 		}
 		// Check if it's a timeout or lock issue
 		errMsg := err.Error()
@@ -1417,12 +1442,17 @@ func loadAllSessions() ([]SessionInfo, error) {
 			if runtime.GOOS == "linux" {
 				retryTimeout = 180 * time.Second // Very long timeout for retry
 			}
-			retryDb, retryErr := bbolt.Open(sessionsDBPath, 0444, &bbolt.Options{
-				Timeout:     retryTimeout,
-				ReadOnly:    true,
-				NoGrowSync:  true,
-				NoSync:      true,
-				MmapFlags:   0,
+			// Use appropriate file mode for retry
+			retryFileMode := os.FileMode(0666)
+			if runtime.GOOS != "windows" {
+				retryFileMode = 0444
+			}
+			retryDb, retryErr := bbolt.Open(sessionsDBPath, retryFileMode, &bbolt.Options{
+				Timeout:    retryTimeout,
+				ReadOnly:   true,
+				NoGrowSync: true,
+				NoSync:     true,
+				MmapFlags:  0,
 			})
 			if retryErr != nil {
 				panelLogger.Error("Failed to open database after retry", retryErr)
@@ -1502,7 +1532,7 @@ func deleteSession(sessionID string) error {
 
 	// Step 2: Delete the session from the database
 	panelLogger.Info(fmt.Sprintf("Deleting session: %s", sessionID))
-	
+
 	// Ensure directory exists
 	dbDir := filepath.Dir(sessionsDBPath)
 	if err := os.MkdirAll(dbDir, 0755); err != nil {
@@ -1519,10 +1549,10 @@ func deleteSession(sessionID string) error {
 	}
 
 	db, err := bbolt.Open(sessionsDBPath, 0600, &bbolt.Options{
-		Timeout:     timeout,
-		ReadOnly:    false, // Need write access for deletion
-		NoGrowSync:  false,
-		NoSync:      false,
+		Timeout:    timeout,
+		ReadOnly:   false, // Need write access for deletion
+		NoGrowSync: false,
+		NoSync:     false,
 	})
 	if err != nil {
 		panelLogger.Error(fmt.Sprintf("Failed to open sessions database for deletion: %s", sessionsDBPath), err)
@@ -1642,7 +1672,7 @@ func (l *Logger) log(level, message string) {
 
 	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	formattedMessage := fmt.Sprintf("[%s] [%s] %s", timestamp, level, message)
-	
+
 	if l.logger != nil {
 		l.logger.Println(formattedMessage)
 	}
@@ -1674,7 +1704,7 @@ func (l *Logger) Debug(message string) {
 
 // Request logs an HTTP request
 func (l *Logger) Request(method, path, remoteAddr string, statusCode int, duration time.Duration) {
-	l.log("REQUEST", fmt.Sprintf("%s %s | IP: %s | Status: %d | Duration: %v", 
+	l.log("REQUEST", fmt.Sprintf("%s %s | IP: %s | Status: %d | Duration: %v",
 		method, path, remoteAddr, statusCode, duration))
 }
 
@@ -1738,13 +1768,13 @@ func getClientIP(r *http.Request) string {
 			return strings.TrimSpace(ips[0])
 		}
 	}
-	
+
 	// Check X-Real-IP header
 	realIP := r.Header.Get("X-Real-IP")
 	if realIP != "" {
 		return realIP
 	}
-	
+
 	// Fallback to RemoteAddr
 	ip := r.RemoteAddr
 	if colon := strings.LastIndex(ip, ":"); colon != -1 {
@@ -1767,17 +1797,17 @@ func isIPBlocked(ip string) bool {
 func checkLoginAttempts(ip string) (bool, int, time.Time) {
 	loginAttemptsMutex.RLock()
 	defer loginAttemptsMutex.RUnlock()
-	
+
 	attempt, exists := loginAttempts[ip]
 	if !exists {
 		return false, 0, time.Time{}
 	}
-	
+
 	// Check if blocking period has expired
 	if attempt.Blocked && time.Now().Before(attempt.BlockedUntil) {
 		return true, attempt.Attempts, attempt.BlockedUntil
 	}
-	
+
 	// Reset if blocking period expired
 	if attempt.Blocked && time.Now().After(attempt.BlockedUntil) {
 		loginAttemptsMutex.RUnlock()
@@ -1787,7 +1817,7 @@ func checkLoginAttempts(ip string) (bool, int, time.Time) {
 		loginAttemptsMutex.RLock()
 		return false, 0, time.Time{}
 	}
-	
+
 	// Check if within time window
 	window := time.Duration(panelConfig.LoginAttemptWindow) * time.Second
 	if time.Since(attempt.LastAttempt) > window {
@@ -1799,7 +1829,7 @@ func checkLoginAttempts(ip string) (bool, int, time.Time) {
 		loginAttemptsMutex.RLock()
 		return false, 0, time.Time{}
 	}
-	
+
 	return false, attempt.Attempts, time.Time{}
 }
 
@@ -1807,25 +1837,25 @@ func checkLoginAttempts(ip string) (bool, int, time.Time) {
 func recordFailedLogin(ip string) {
 	loginAttemptsMutex.Lock()
 	defer loginAttemptsMutex.Unlock()
-	
+
 	attempt, exists := loginAttempts[ip]
 	if !exists {
 		attempt = &LoginAttempt{
-			IP:        ip,
-			Attempts:  0,
+			IP:          ip,
+			Attempts:    0,
 			LastAttempt: time.Now(),
-			Blocked:   false,
+			Blocked:     false,
 		}
 	}
-	
+
 	attempt.Attempts++
 	attempt.LastAttempt = time.Now()
-	
+
 	// Block if exceeded max attempts
 	if attempt.Attempts >= panelConfig.MaxLoginAttempts {
 		attempt.Blocked = true
 		attempt.BlockedUntil = time.Now().Add(time.Duration(panelConfig.BlockDuration) * time.Second)
-		panelLogger.Warning(fmt.Sprintf("IP %s blocked due to %d failed login attempts. Blocked for %d seconds until %v", 
+		panelLogger.Warning(fmt.Sprintf("IP %s blocked due to %d failed login attempts. Blocked for %d seconds until %v",
 			ip, attempt.Attempts, panelConfig.BlockDuration, attempt.BlockedUntil))
 		// Add to blocked IPs list
 		if !isIPBlocked(ip) {
@@ -1833,7 +1863,7 @@ func recordFailedLogin(ip string) {
 			savePanelConfig(panelConfig)
 		}
 	}
-	
+
 	loginAttempts[ip] = attempt
 }
 
@@ -1853,7 +1883,7 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	if r.Method == http.MethodPost {
 		clientIP := getClientIP(r)
-		
+
 		// Check if IP is blocked
 		if isIPBlocked(clientIP) {
 			panelLogger.Warning(fmt.Sprintf("Blocked IP attempted to login: %s", clientIP))
@@ -1863,12 +1893,12 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			renderTemplate(w, r, "login.html", data)
 			return
 		}
-		
+
 		// Check login attempts
 		isBlocked, attempts, blockedUntil := checkLoginAttempts(clientIP)
 		if isBlocked {
 			remaining := time.Until(blockedUntil)
-			panelLogger.Warning(fmt.Sprintf("IP %s is temporarily blocked. Attempts: %d. Remaining: %v", 
+			panelLogger.Warning(fmt.Sprintf("IP %s is temporarily blocked. Attempts: %d. Remaining: %v",
 				clientIP, attempts, remaining))
 			data := map[string]interface{}{
 				"Error": fmt.Sprintf("Too many failed login attempts. Please try again after %v", remaining.Round(time.Second)),
@@ -1876,14 +1906,14 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 			renderTemplate(w, r, "login.html", data)
 			return
 		}
-		
+
 		username := r.FormValue("username")
 		password := r.FormValue("password")
 
 		if username == panelConfig.Username && password == panelConfig.Password {
 			// Clear login attempts on successful login
 			clearLoginAttempts(clientIP)
-			
+
 			// Set session cookie
 			cookie := http.Cookie{
 				Name:     "panel_session",
@@ -1902,17 +1932,17 @@ func loginHandler(w http.ResponseWriter, r *http.Request) {
 		recordFailedLogin(clientIP)
 		_, attempts, _ = checkLoginAttempts(clientIP)
 		remaining := panelConfig.MaxLoginAttempts - attempts
-		
-		panelLogger.Warning(fmt.Sprintf("Failed login attempt from IP: %s (Username: %s). Attempts: %d/%d", 
+
+		panelLogger.Warning(fmt.Sprintf("Failed login attempt from IP: %s (Username: %s). Attempts: %d/%d",
 			clientIP, username, attempts, panelConfig.MaxLoginAttempts))
-		
+
 		errorMsg := "Invalid username or password"
 		if remaining > 0 {
 			errorMsg = fmt.Sprintf("Invalid username or password. %d attempts remaining.", remaining)
 		} else {
 			errorMsg = fmt.Sprintf("Too many failed attempts. IP blocked for %d seconds.", panelConfig.BlockDuration)
 		}
-		
+
 		data := map[string]interface{}{
 			"Error": errorMsg,
 		}
@@ -2116,4 +2146,3 @@ func restartPanelService() {
 		panelLogger.Info(fmt.Sprintf("Panel service restarted successfully: %s", linuxPanelService))
 	}
 }
-
