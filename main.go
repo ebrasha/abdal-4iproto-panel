@@ -152,7 +152,7 @@ var loginAttempts = make(map[string]*LoginAttempt)
 var loginAttemptsMutex sync.RWMutex
 
 const (
-	panelVersion = "2.29"
+	panelVersion = "2.30"
 	panelAuthor  = "Ebrahim Shafiei (EbraSha)"
 	serviceName  = "Abdal4iProtoPanel"
 )
@@ -177,6 +177,28 @@ func main() {
 
 // runServer starts the HTTP server (used by both service and standalone modes)
 func runServer() {
+	// Ensure working directory is set to executable directory (important for Windows services)
+	// This ensures config files are found even if service runs from different directory
+	if runtime.GOOS == "windows" {
+		exePath, err := os.Executable()
+		if err == nil {
+			exePath, err = filepath.Abs(exePath)
+			if err == nil {
+				exeDir := filepath.Dir(exePath)
+				currentDir, _ := os.Getwd()
+				if currentDir != exeDir {
+					if err := os.Chdir(exeDir); err == nil {
+						if panelLogger != nil {
+							panelLogger.Info(fmt.Sprintf("Working directory changed from %s to %s", currentDir, exeDir))
+						} else {
+							log.Printf("Working directory changed from %s to %s", currentDir, exeDir)
+						}
+					}
+				}
+			}
+		}
+	}
+
 	// Load panel configuration
 	var err error
 	panelConfig, err = loadPanelConfig()

@@ -300,6 +300,29 @@ echo.
 REM Install Panel Service
 color 0B
 echo [INFO] Installing panel service "%PANEL_SERVICE_NAME%"...
+
+REM Try to install Event Log source (requires admin privileges)
+color 0B
+echo [INFO] Installing Event Log source for "%PANEL_SERVICE_NAME%"...
+eventcreate /ID 1 /L APPLICATION /T INFORMATION /SO "%PANEL_SERVICE_NAME%" /D "Abdal 4iProto Panel Event Log Source" >nul 2>&1
+if !errorLevel! equ 0 (
+    color 0A
+    echo [SUCCESS] Event Log source installed successfully!
+) else (
+    REM Try PowerShell method
+    powershell -Command "New-EventLog -LogName Application -Source '%PANEL_SERVICE_NAME%' -ErrorAction SilentlyContinue" >nul 2>&1
+    if !errorLevel! equ 0 (
+        color 0A
+        echo [SUCCESS] Event Log source installed successfully via PowerShell!
+    ) else (
+        color 0E
+        echo [WARNING] Could not install Event Log source automatically.
+        echo [INFO] Event Log will be created automatically when the service starts.
+        echo [INFO] You can install it manually later if needed.
+    )
+)
+echo.
+
 set "PANEL_BINPATH=!INSTALL_DIR!\!PANEL_EXECUTABLE!"
 sc create "%PANEL_SERVICE_NAME%" binPath= "!PANEL_BINPATH!" DisplayName= "%PANEL_SERVICE_DISPLAY_NAME%" start= auto
 
@@ -320,6 +343,7 @@ if !errorLevel! equ 0 (
         echo [WARNING] Panel service created but failed to start.
         color 0B
         echo [INFO] You can start it manually from Services.msc
+        echo [INFO] Check Event Viewer for error details.
     )
 ) else (
     color 0C
