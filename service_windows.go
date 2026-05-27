@@ -1,3 +1,4 @@
+//go:build windows
 // +build windows
 
 /*
@@ -42,7 +43,7 @@ func isWindowsService() bool {
 			return false // These are service management commands, not service execution
 		}
 	}
-	
+
 	// Use svc.IsAnInteractiveSession() to detect if running as service
 	// Services run in non-interactive sessions
 	isIntSess, err := svc.IsAnInteractiveSession()
@@ -72,11 +73,11 @@ func runWindowsService() {
 			return
 		}
 	}
-	
+
 	// Run as service
 	panelLogger = NewLogger(true) // Always log when running as service
 	panelLogger.Info("Running as Windows Service...")
-	
+
 	// Use svc.Run for production service
 	// For testing/debugging, you can use debug.Run instead
 	useDebug := os.Getenv("SERVICE_DEBUG") == "1"
@@ -99,14 +100,30 @@ type panelWindowsService struct{}
 func (ws *panelWindowsService) Execute(args []string, r <-chan svc.ChangeRequest, changes chan<- svc.Status) (ssec bool, errno uint32) {
 	const cmdsAccepted = svc.AcceptStop | svc.AcceptShutdown
 	changes <- svc.Status{State: svc.StartPending}
-	
+
+	// Set working directory to executable directory to ensure config files are found
+	// This is critical because Windows services may run from System32 by default
+	exePath, err := os.Executable()
+	if err == nil {
+		exePath, err = filepath.Abs(exePath)
+		if err == nil {
+			exeDir := filepath.Dir(exePath)
+			if err := os.Chdir(exeDir); err == nil {
+				// panelLogger may not be initialized yet, use log instead
+				log.Printf("Working directory set to: %s", exeDir)
+			} else {
+				log.Printf("Failed to set working directory: %v", err)
+			}
+		}
+	}
+
 	// Start server in a goroutine
 	go func() {
 		runServer()
 	}()
-	
+
 	changes <- svc.Status{State: svc.Running, Accepts: cmdsAccepted}
-	
+
 	// Wait for service control commands
 	for {
 		select {
@@ -141,38 +158,47 @@ func installWindowsService() {
 	if err != nil {
 		log.Fatalf("Failed to get executable path: %v", err)
 	}
-	
+
 	exePath, err = filepath.Abs(exePath)
 	if err != nil {
 		log.Fatalf("Failed to get absolute path: %v", err)
 	}
-	
+
+	// Get the directory where the executable is located (this will be the working directory)
+	exeDir := filepath.Dir(exePath)
+
 	m, err := svcmgr.Connect()
 	if err != nil {
 		log.Fatalf("Failed to connect to service manager: %v", err)
 	}
 	defer m.Disconnect()
-	
+
 	s, err := m.OpenService(serviceName)
 	if err == nil {
 		s.Close()
 		log.Fatalf("Service %s already exists", serviceName)
 	}
-	
+
 	config := svcmgr.Config{
 		DisplayName:  "Abdal 4iProto Panel",
 		Description:  "Management panel for Abdal 4iProto Server",
 		StartType:    svcmgr.StartAutomatic,
 		ErrorControl: svcmgr.ErrorNormal,
 	}
-	
+
 	s, err = m.CreateService(serviceName, exePath, config)
 	if err != nil {
 		log.Fatalf("Failed to create service: %v", err)
 	}
 	defer s.Close()
-	
+
+	// Note: Windows Service Manager doesn't support setting WorkingDirectory in Config
+	// The working directory will be set programmatically in Execute() and runServer()
+	// to ensure config files are found even if service runs from System32
+
 	fmt.Printf("Service %s installed successfully\n", serviceName)
+	fmt.Printf("Executable directory: %s\n", exeDir)
+	fmt.Printf("Note: Working directory will be set to executable directory at runtime\n")
 	fmt.Printf("To start the service, run: sc start %s\n", serviceName)
 }
 
@@ -183,18 +209,18 @@ func uninstallWindowsService() {
 		log.Fatalf("Failed to connect to service manager: %v", err)
 	}
 	defer m.Disconnect()
-	
+
 	s, err := m.OpenService(serviceName)
 	if err != nil {
 		log.Fatalf("Service %s is not installed", serviceName)
 	}
 	defer s.Close()
-	
+
 	err = s.Delete()
 	if err != nil {
 		log.Fatalf("Failed to delete service: %v", err)
 	}
-	
+
 	fmt.Printf("Service %s uninstalled successfully\n", serviceName)
 }
 
@@ -205,18 +231,18 @@ func startWindowsService() {
 		log.Fatalf("Failed to connect to service manager: %v", err)
 	}
 	defer m.Disconnect()
-	
+
 	s, err := m.OpenService(serviceName)
 	if err != nil {
 		log.Fatalf("Service %s is not installed", serviceName)
 	}
 	defer s.Close()
-	
+
 	err = s.Start()
 	if err != nil {
 		log.Fatalf("Failed to start service: %v", err)
 	}
-	
+
 	fmt.Printf("Service %s started successfully\n", serviceName)
 }
 
@@ -227,18 +253,17 @@ func stopWindowsService() {
 		log.Fatalf("Failed to connect to service manager: %v", err)
 	}
 	defer m.Disconnect()
-	
+
 	s, err := m.OpenService(serviceName)
 	if err != nil {
 		log.Fatalf("Service %s is not installed", serviceName)
 	}
 	defer s.Close()
-	
+
 	_, err = s.Control(svc.Stop)
 	if err != nil {
 		log.Fatalf("Failed to stop service: %v", err)
 	}
-	
+
 	fmt.Printf("Service %s stopped successfully\n", serviceName)
 }
-
