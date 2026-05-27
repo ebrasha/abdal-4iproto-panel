@@ -76,6 +76,14 @@ The panel is built with Go and uses embedded resources, making it a single execu
 
 ## 🚀 Installation
 
+
+## 🚀 Easy Installation via Abdal 4iProto Cli
+
+[**Abdal 4iProto Cli**](https://github.com/ebrasha/abdal-4iproto-cli) is an advanced CLI tool for managing the Abdal 4iProto Ecosystem. It automatically detects your OS/Architecture, verifies SHA-256 checksums, configures ports, generates SSH keys, and registers persistent system services.
+
+ 
+ 
+ 
 ## 🧩 Required Files for Installation
 
 The following files must be placed alongside the installation script:
