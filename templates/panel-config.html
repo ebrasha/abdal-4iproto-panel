@@ -156,6 +156,27 @@
                         <small class="form-text text-muted">{{T "block_duration_description"}}</small>
                     </div>
 
+                    <h3 class="mt-4 mb-3">🤖 {{T "telegram_bot"}}</h3>
+                    <div class="mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="telegramEnabled">
+                            <label class="form-check-label" for="telegramEnabled">
+                                {{T "telegram_enabled"}}
+                            </label>
+                        </div>
+                        <small class="form-text text-muted">{{T "telegram_enabled_description"}}</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{T "telegram_token"}}</label>
+                        <input type="text" class="form-control" id="telegramToken" placeholder="123456:ABCdefGhIJklmNoPQRstuVwxYZ">
+                        <small class="form-text text-muted">{{T "telegram_token_description"}}</small>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">{{T "telegram_admins"}}</label>
+                        <textarea class="form-control" id="telegramAdmins" rows="3" placeholder="123456789, 987654321"></textarea>
+                        <small class="form-text text-muted">{{T "telegram_admins_description"}}</small>
+                    </div>
+
                     <h3 class="mt-4 mb-3">{{T "blocked_ips"}}</h3>
                     <div class="mb-3">
                         <div class="d-flex justify-content-between align-items-center mb-2">
@@ -245,6 +266,11 @@
                 document.getElementById('blockDuration').value = config.block_duration || 3600;
                 blockedIPs = config.blocked_ips || [];
                 renderBlockedIPs();
+
+                const tg = config.telegram_bot || { enabled: false, token: '', admins: [] };
+                document.getElementById('telegramEnabled').checked = !!tg.enabled;
+                document.getElementById('telegramToken').value = tg.token || '';
+                document.getElementById('telegramAdmins').value = (tg.admins || []).join(', ');
             } catch (error) {
                 console.error('Error loading config:', error);
             }
@@ -287,6 +313,14 @@
         }
 
         async function saveConfig() {
+            const adminsRaw = document.getElementById('telegramAdmins').value || '';
+            const adminIds = adminsRaw
+                .split(/[\s,;\n]+/)
+                .map(s => s.trim())
+                .filter(s => s.length > 0)
+                .map(s => parseInt(s, 10))
+                .filter(n => Number.isFinite(n) && n > 0);
+
             const config = {
                 port: parseInt(document.getElementById('port').value),
                 username: document.getElementById('username').value,
@@ -296,7 +330,12 @@
                 blocked_ips: blockedIPs,
                 max_login_attempts: parseInt(document.getElementById('maxLoginAttempts').value),
                 login_attempt_window: parseInt(document.getElementById('loginAttemptWindow').value),
-                block_duration: parseInt(document.getElementById('blockDuration').value)
+                block_duration: parseInt(document.getElementById('blockDuration').value),
+                telegram_bot: {
+                    enabled: document.getElementById('telegramEnabled').checked,
+                    token: document.getElementById('telegramToken').value.trim(),
+                    admins: adminIds
+                }
             };
 
             try {

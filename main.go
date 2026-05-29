@@ -35,6 +35,8 @@ import (
 	"sync"
 	"time"
 
+	tg "abdal-4iproto-panel/core/telegram"
+
 	"go.etcd.io/bbolt"
 )
 
@@ -118,17 +120,25 @@ type SessionInfo struct {
 	Revoked       bool   `json:"revoked"`
 }
 
+// TelegramBotConfig holds Telegram bot integration settings
+type TelegramBotConfig struct {
+	Enabled bool    `json:"enabled"`
+	Token   string  `json:"token"`
+	Admins  []int64 `json:"admins"`
+}
+
 // PanelConfig represents the panel configuration
 type PanelConfig struct {
-	Port               int      `json:"port"`
-	Username           string   `json:"username"`
-	Password           string   `json:"password"`
-	Logging            bool     `json:"logging"`
-	BlockedIPs         []string `json:"blocked_ips"`
-	MaxLoginAttempts   int      `json:"max_login_attempts"`
-	LoginAttemptWindow int      `json:"login_attempt_window"` // in seconds - time window for counting attempts
-	BlockDuration      int      `json:"block_duration"`       // in seconds - duration IP remains blocked after exceeding max attempts
-	Theme              string   `json:"theme"`                // theme name: normal, ebrasha-dark
+	Port               int               `json:"port"`
+	Username           string            `json:"username"`
+	Password           string            `json:"password"`
+	Logging            bool              `json:"logging"`
+	BlockedIPs         []string          `json:"blocked_ips"`
+	MaxLoginAttempts   int               `json:"max_login_attempts"`
+	LoginAttemptWindow int               `json:"login_attempt_window"` // in seconds - time window for counting attempts
+	BlockDuration      int               `json:"block_duration"`       // in seconds - duration IP remains blocked after exceeding max attempts
+	Theme              string            `json:"theme"`                // theme name: normal, ebrasha-dark
+	TelegramBot        TelegramBotConfig `json:"telegram_bot"`         // Telegram bot integration settings
 }
 
 // LoginAttempt tracks login attempts
@@ -152,14 +162,17 @@ var loginAttempts = make(map[string]*LoginAttempt)
 var loginAttemptsMutex sync.RWMutex
 
 const (
-	panelVersion = "2.30"
+	panelVersion = "3.5"
 	panelAuthor  = "Ebrahim Shafiei (EbraSha)"
 	serviceName  = "Abdal4iProtoPanel"
 )
 
 var (
-	httpServer *http.Server
-	serverStop chan bool
+	httpServer    *http.Server
+	serverStop    chan bool
+	telegramBot   *tg.Bot
+	telegramCtx   context.Context
+	telegramStop  context.CancelFunc
 )
 
 func main() {
@@ -214,6 +227,11 @@ func runServer() {
 			LoginAttemptWindow: 300,      // 5 minutes in seconds
 			BlockDuration:      3600,     // 1 hour in seconds
 			Theme:              "normal", // default theme
+			TelegramBot: TelegramBotConfig{
+				Enabled: false,
+				Token:   "",
+				Admins:  []int64{},
+			},
 		}
 		// Save default config
 		savePanelConfig(panelConfig)
@@ -318,6 +336,9 @@ func runServer() {
 	serverStop = make(chan bool)
 	defer cleanup()
 
+	// Start the Telegram bot in the background if enabled in panel config
+	startTelegramBot()
+
 	// Start server
 	if err := httpServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		panelLogger.Error("Server failed to start", err)
@@ -328,6 +349,9 @@ func runServer() {
 // cleanup performs cleanup operations on shutdown
 func cleanup() {
 	panelLogger.Info("Panel shutting down...")
+
+	// Stop Telegram bot first so it stops issuing API calls during shutdown
+	stopTelegramBot()
 
 	// Stop HTTP server gracefully
 	if httpServer != nil {
@@ -1747,6 +1771,13 @@ func loadPanelConfig() (*PanelConfig, error) {
 	if err := json.Unmarshal(data, &config); err != nil {
 		return nil, err
 	}
+	// Normalize: ensure slices are non-nil to keep JSON marshalling consistent
+	if config.BlockedIPs == nil {
+		config.BlockedIPs = []string{}
+	}
+	if config.TelegramBot.Admins == nil {
+		config.TelegramBot.Admins = []int64{}
+	}
 	return &config, nil
 }
 
@@ -2134,6 +2165,47 @@ func startPanelService() error {
 		panelLogger.Info(fmt.Sprintf("Panel service started successfully: %s", linuxPanelService))
 		return nil
 	}
+}
+
+// startTelegramBot initializes the Telegram bot using the loaded panel config.
+// It is safe to call even when the bot is disabled or misconfigured: the bot
+// package logs and silently skips startup in those cases.
+func startTelegramBot() {
+	if panelConfig == nil {
+		return
+	}
+	if !panelConfig.TelegramBot.Enabled {
+		panelLogger.Info("Telegram bot is disabled in panel config")
+		return
+	}
+	if telegramBot != nil && telegramBot.IsRunning() {
+		return
+	}
+
+	adapter := newPanelServiceAdapter()
+	telegramBot = tg.New(telegramBotConfig(), adapter)
+	telegramCtx, telegramStop = context.WithCancel(context.Background())
+	if err := telegramBot.Start(telegramCtx); err != nil {
+		panelLogger.Error("Failed to start Telegram bot", err)
+		telegramStop()
+		telegramBot = nil
+		telegramStop = nil
+		telegramCtx = nil
+	}
+}
+
+// stopTelegramBot stops the Telegram bot if it is running
+func stopTelegramBot() {
+	if telegramBot == nil {
+		return
+	}
+	telegramBot.Stop()
+	if telegramStop != nil {
+		telegramStop()
+	}
+	telegramBot = nil
+	telegramStop = nil
+	telegramCtx = nil
 }
 
 // restartPanelService restarts the panel service based on OS

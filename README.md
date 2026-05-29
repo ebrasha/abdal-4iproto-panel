@@ -193,6 +193,91 @@ All management is done through the web interface:
 - **Panel Configuration**: Manage panel settings
 - **About**: Information about the panel and programmer
 
+## 🤖 Telegram Bot
+
+The panel ships with an optional Telegram bot that mirrors every administrative action from the web UI.
+
+### Enabling the bot
+
+1.  Open `@BotFather` in Telegram and create a new bot. Save the API token it gives you.
+2.  Open `@userinfobot` (or any similar bot) and copy your own numeric Telegram user ID.
+3.  In the panel, go to **Panel Configuration** and scroll to the **🤖 Telegram Bot** section.
+4.  Tick **Enable Telegram bot**, paste the API token, then list one or more admin Telegram IDs (separated by commas, spaces or new lines).
+5.  Click **Save**. The panel service restarts automatically and the bot starts polling Telegram.
+
+The settings are persisted to `abdal-4iproto-panel.json` under the `telegram_bot` key:
+
+```json
+"telegram_bot": {
+  "enabled": true,
+  "token": "123456789:AA...your-bot-token",
+  "admins": [111111111, 222222222]
+}
+```
+
+### Security model
+
+*   The bot drops every update that does not come from an admin Telegram ID, and replies with a short "not authorized" message so attackers do not silently probe it.
+
+
+### Architecture & performance design
+
+The bot runs as a fully isolated subsystem inside the panel process. It uses its own HTTP connection pool, dispatcher worker pool, asynchronous log channel and debounced restart queue, so a busy panel UI or slow disk I/O can never slow the bot down. The end-to-end update pipeline looks like this:
+
+```text
+┌─────────────────────────┐      ┌──────────────────────┐
+│ Telegram getUpdates     │ ───► │ updates channel      │
+│ (1 goroutine)           │      │ (cap 1024)           │
+└─────────────────────────┘      └──────────┬───────────┘
+                                            │
+                          ┌─────────────────┼─────────────────┐
+                          ▼                 ▼                 ▼
+                   ┌──────────┐      ┌──────────┐      ┌──────────┐
+                   │ worker 1 │ ...  │ worker N │      │ worker N │ (NumCPU*2, ≥8)
+                   └────┬─────┘      └────┬─────┘      └────┬─────┘
+                        │                 │                 │
+                        ▼ (go r(ctx,b,u)) ▼                 ▼
+                   ┌────────────────────────────────────────────┐
+                   │ Per-handler goroutine                       │
+                   │  → trackerMiddleware (WaitGroup +1)         │
+                   │  → adminOnly                                │
+                   │  → recover                                  │
+                   │  → handler (sendText via HTTP/2 conn pool)  │
+                   └────────────────────────────────────────────┘
+                        │
+                        ▼ (svc.Info/Warning/Error)
+                   ┌────────────────┐
+                   │ async log chan │ ──► dedicated writer ──► panelLogger
+                   │ (cap 1024)     │
+                   └────────────────┘
+```
+
+### Bot commands
+
+Every command also appears in the Telegram client's `/` menu (registered automatically through `SetMyCommands`).
+
+| Command | Description |
+| --- | --- |
+| `/start` | Start the bot. First-time users see the language picker (🇬🇧 / 🇮🇷). |
+| `/menu` | Open the main menu (also available from any "🏠 Main Menu" button). |
+| `/language` | Switch between English and Persian at any time. |
+| `/help` | Print the full list of commands. |
+| `/cancel` | Abort the current interactive flow and return to the menu. |
+| `/users` | Open the paginated user list. |
+| `/adduser` | Create a user with default values (see below). |
+| `/adduser_interactive` | Create a user step by step (asks every field). |
+| `/server` | View or edit the server configuration field by field. |
+| `/blockedips` | Manage globally blocked IPs (list, add, remove). |
+| `/logs` | Browse user access logs (last 20 entries per user). |
+| `/blockedaccess` | Browse blocked access logs. |
+| `/traffic` | Show per user traffic usage. |
+| `/sessions` | List active sessions and revoke them. |
+| `/restart_server` | Restart the Abdal 4iProto Server service (with confirmation). |
+| `/restart_panel` | Restart the panel service (with confirmation). |
+
+ 
+
+
 ## 🔧 Service Installation
 
 The panel can be installed as a system service for automatic startup and background operation.
